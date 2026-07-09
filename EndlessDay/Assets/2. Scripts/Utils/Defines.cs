@@ -18,7 +18,18 @@ namespace Defines
         DungeonRoomTable,
         RoomSpawnTable,
         EquipmentTable,
+        PlayerBaseStatTable,
 
         max
+    }
+    public enum PlayerActionState
+    {
+        IDLE,
+        MOVE,
+        ATTACK,
+        SKILL,
+        HIT,
+
+        DEATH = 50
     }
 }
