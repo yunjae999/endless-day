@@ -1,0 +1,208 @@
+using System;
+using System.Runtime.InteropServices;
+
+namespace DefinePacket
+{
+    // ─────────────────────────────────────────────
+    // 기본 패킷 구조 (고정 1024byte)
+    // ─────────────────────────────────────────────
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Packet
+    {
+        [MarshalAs(UnmanagedType.U4)]
+        public int _protocol;
+        [MarshalAs(UnmanagedType.U4)]
+        public int _totalSize;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1016)]
+        public byte[] _data;
+    }
+
+    // ─────────────────────────────────────────────
+    // 클라 ↔ 서버 패킷 데이터 구조체
+    // ─────────────────────────────────────────────
+
+    /// <summary>서버 → 클라 : 접속 OK</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Connected_Info
+    {
+        public int _tempSocketId;
+    }
+
+    /// <summary>클라 → 서버 : 아이디 중복확인 요청</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CheckUsername_Request
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _username;
+    }
+
+    /// <summary>클라 → 서버 : 회원가입 요청 (비밀번호는 평문으로 전송, 서버에서 해싱)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Register_Request
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _username;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _password;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _nickname;
+    }
+
+    /// <summary>서버 → 클라 : 회원가입 결과</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Register_Result
+    {
+        public int _result;   // 1 = 성공, 0 = 실패
+    }
+
+    /// <summary>서버 → 클라 : 회원가입 실패 이유 (ErrorCode.RegisterFailReason)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Register_Fail
+    {
+        public int _reason;
+    }
+
+    /// <summary>클라 → 서버 : 로그인 요청</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Login_Request
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _username;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _password;
+    }
+
+    /// <summary>서버 → 클라 : 로그인 결과 + PlayerData</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Login_Result
+    {
+        public int _result;        // 1 = 성공, 0 = 실패
+        public int _userId;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _nickname;
+        public int _gold;
+        public int _tryCount;
+        public int _isCleared;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string _unlockedWeapons;     // JSON 문자열
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string _equippedEquipment;   // JSON 문자열
+    }
+
+    /// <summary>서버 → 클라 : 로그인 실패 이유 (ErrorCode.LoginFailReason)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Login_Fail
+    {
+        public int _reason;
+    }
+
+    // ─────────────────────────────────────────────
+    // 서버 ↔ DB 패킷 데이터 구조체
+    // ─────────────────────────────────────────────
+
+    /// <summary>서버 → DB : 회원가입 요청 (비밀번호는 서버에서 이미 BCrypt 해싱 완료)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_Register_Request
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _username;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string _passwordHash;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _nickname;
+    }
+
+    /// <summary>DB → 서버 : 회원가입 결과</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_Register_Result
+    {
+        public int _result;   // 1 = 성공, 0 = 실패
+        public int _userId;   // 성공 시 새로 생성된 UserID (실패면 0)
+    }
+
+    /// <summary>DB → 서버 : 서버 시작 시 전체 유저 수</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_UserCount
+    {
+        public int _count;
+    }
+
+    /// <summary>DB → 서버 : 유저 1명 정보 (전체 유저 목록 캐싱용, 유저 수만큼 반복 전송)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_UserInfo
+    {
+        public int _userId;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _username;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string _passwordHash;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string _nickname;
+    }
+
+    /// <summary>서버 → DB : PlayerData 조회 요청</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_GetPlayerData_Request
+    {
+        public int _userId;
+    }
+
+    /// <summary>DB → 서버 : PlayerData 조회 결과</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_PlayerData_Info
+    {
+        public int _gold;
+        public int _tryCount;
+        public int _isCleared;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string _unlockedWeapons;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string _equippedEquipment;
+    }
+
+    // ─────────────────────────────────────────────
+    // 변환 유틸
+    // ─────────────────────────────────────────────
+
+    public class ConvertPacket
+    {
+        public static byte[] ToBytes(object obj)
+        {
+            int dataSize = Marshal.SizeOf(obj);
+            IntPtr buff = Marshal.AllocHGlobal(dataSize);
+            Marshal.StructureToPtr(obj, buff, false);
+            byte[] data = new byte[dataSize];
+            Marshal.Copy(buff, data, 0, dataSize);
+            Marshal.FreeHGlobal(buff);
+            return data;
+        }
+
+        public static object ToStruct(byte[] data, Type type)
+        {
+            IntPtr buff = Marshal.AllocHGlobal(data.Length);
+            Marshal.Copy(data, 0, buff, data.Length);
+            object obj = Marshal.PtrToStructure(buff, type);
+            Marshal.FreeHGlobal(buff);
+            return obj;
+        }
+
+        public static Packet MakePacket(int protocol, object data)
+        {
+            byte[] dataBytes = ToBytes(data);
+            Packet packet = new Packet();
+            packet._protocol = protocol;
+            packet._totalSize = dataBytes.Length;
+            packet._data = new byte[1016];
+            Array.Copy(dataBytes, packet._data, dataBytes.Length);
+            return packet;
+        }
+
+        public static object UnpackData(Packet packet, Type type)
+        {
+            byte[] dataBytes = new byte[packet._totalSize];
+            Array.Copy(packet._data, dataBytes, packet._totalSize);
+            return ToStruct(dataBytes, type);
+        }
+    }
+}

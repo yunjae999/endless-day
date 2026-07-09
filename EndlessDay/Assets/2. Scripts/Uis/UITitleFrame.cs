@@ -10,23 +10,15 @@ public class UITitleFrame : MonoBehaviour
     [SerializeField] private UITitlePanel _titlePanel;
     [SerializeField] private UILoginPanel _loginPanel;
 
-    private void Awake()
+    void Awake()
     {
-        _titlePanel.StartGameButton.onClick.AddListener(OnClickStartGame);
         _loginPanel.CloseButton.onClick.AddListener(OnClickCloseLogin);
 
-        // 초기 상태: 타이틀 패널만 보이고, 로그인 패널은 숨김
         _titlePanel.gameObject.SetActive(true);
         _loginPanel.gameObject.SetActive(false);
     }
 
-    private void OnClickStartGame()
-    {
-        _titlePanel.gameObject.SetActive(false);
-        _loginPanel.gameObject.SetActive(true);
-    }
-
-    private void OnClickCloseLogin()
+    void OnClickCloseLogin()
     {
         _loginPanel.gameObject.SetActive(false);
         _titlePanel.gameObject.SetActive(true);
