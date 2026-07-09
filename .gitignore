@@ -104,3 +104,25 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 **/[Aa]ssets/[Ss]ceneDependencyCache*
+
+# --------------------------------------------------
+# Excel To JSON Converter
+# --------------------------------------------------
+
+# Ignore converter build output
+**/[Bb]in/
+**/[Dd]ebug/
+**/[Rr]elease/
+
+# Keep converter project folder
+!GameDataTableConverter/
+
+# Keep converter project files
+!GameDataTableConverter/*.csproj
+!GameDataTableConverter/*.sln
+
+# Keep converter source/data folders
+!GameDataTableConverter/Tables/
+!GameDataTableConverter/Tables/*.xlsx
+!GameDataTableConverter/Libs/
+!GameDataTableConverter/Libs/*.dll
