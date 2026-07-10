@@ -19,4 +19,29 @@ public class PlayerAnimationEventRelay : MonoBehaviour
     {
         _controller.OnRollAnimationEnd();
     }
+
+    public void OnRollInvincibleStart()
+    {
+        _controller.OnRollInvincibleStart();
+    }
+
+    public void OnRollInvincibleEnd()
+    {
+        _controller.OnRollInvincibleEnd();
+    }
+
+    public void OnAttackHitboxStart()
+    {
+        _controller.OnAttackHitboxStart();
+    }
+
+    public void OnAttackHitboxEnd()
+    {
+        _controller.OnAttackHitboxEnd();
+    }
+
+    public void OnAttackAnimationEnd()
+    {
+        _controller.OnAttackAnimationEnd();
+    }
 }
