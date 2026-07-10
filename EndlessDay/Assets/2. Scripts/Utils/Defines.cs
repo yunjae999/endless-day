@@ -26,6 +26,7 @@ namespace Defines
     {
         IDLE,
         MOVE,
+        ROLL,
         ATTACK,
         SKILL,
         HIT,
