@@ -7,8 +7,10 @@ public class PlayerController : MonoBehaviour
 {
     Animator _animator;
     PlayerActionState _currentState;
+    PlayerStatManager _statManager;
 
     Vector3 _moveDir;
+    [SerializeField] float _rotateSpeed = 2f;
 
     bool _runInput;
     bool _isRun;
@@ -16,7 +18,12 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         _animator = GetComponentInChildren<Animator>();
+        _statManager = GetComponentInChildren<PlayerStatManager>();
         _currentState = PlayerActionState.IDLE;
+    }
+    void Start()
+    {
+        _statManager.InitBaseStats();
     }
     void Update()
     {
@@ -82,6 +89,7 @@ public class PlayerController : MonoBehaviour
             return;
 
         _isRun = isRun;
+        _animator.SetBool("IsRun", _isRun);
     }
     void UpdateRun()
     {
@@ -93,8 +101,9 @@ public class PlayerController : MonoBehaviour
         SetRun(shouldRun);
     }
     void Move()
-    {        
-        transform.position += _moveDir.normalized * 2f * Time.deltaTime;
+    {
+        float speed = _isRun ? _statManager.BaseRunSpeed : _statManager.BaseMoveSpeed;
+        transform.position += _moveDir.normalized * speed * Time.deltaTime;
     }
     void Rotate()
     {
@@ -107,7 +116,7 @@ public class PlayerController : MonoBehaviour
         transform.rotation = Quaternion.Slerp(
             transform.rotation,
             targetRotation,
-            2f * Time.deltaTime
+            _rotateSpeed * Time.deltaTime
         );
     }
     bool HasMoveInput()
