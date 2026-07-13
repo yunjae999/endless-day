@@ -7,9 +7,9 @@ public class IngameManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        TableDataManager._instance.TableAllLoad();
     }
     void Start()
     {
-        TableDataManager._instance.TableAllLoad();
     }
 }

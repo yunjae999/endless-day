@@ -1,4 +1,5 @@
 using Defines;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -25,7 +26,14 @@ public class PlayerController : MonoBehaviour
     public bool IsInvincible { get; private set; }
 
     [Header("Attack")]
-    [SerializeField] Collider _attackHitbox;   // 무기 콜라이더 (평소엔 꺼둠)
+    [SerializeField] Collider _attackHitbox;       // 전방 고정 BoxCollider (Is Trigger), 평소엔 꺼둠
+    [SerializeField] LayerMask _monsterLayer;      // 몬스터 레이어만 판정
+    HashSet<Collider> _alreadyHit = new HashSet<Collider>();
+
+    [Header("Skill (검: 회전 베기, 반경 3m / 쿨타임 6초)")]
+    [SerializeField] float _skillRadius = 3f;
+    [SerializeField] float _skillCooldown = 6f;
+    float _skillCooldownTimer;
 
     void Awake()
     {
@@ -43,6 +51,7 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         UpdateRollCooldown();
+        UpdateSkillCooldown();
         PlayerProcess();
     }
     void PlayerProcess()
@@ -75,6 +84,7 @@ public class PlayerController : MonoBehaviour
                 // 판정/종료는 Animation Event가 담당, 여기선 할 일 없음
                 break;
             case PlayerActionState.SKILL:
+                // 판정/종료는 Animation Event가 담당, 여기선 할 일 없음
                 break;
         }
     }
@@ -109,6 +119,12 @@ public class PlayerController : MonoBehaviour
         if (!value.isPressed)
             return;
         TryStartAttack();
+    }
+    public void OnSkill(InputValue value)
+    {
+        if (!value.isPressed)
+            return;
+        TryStartSkill();
     }
     void SetRun(bool isRun)
     {
@@ -227,6 +243,7 @@ public class PlayerController : MonoBehaviour
 
     public void OnAttackHitboxStart()
     {
+        _alreadyHit.Clear();   // 이번 공격에서 맞은 대상 기록 초기화
         if (_attackHitbox != null)
             _attackHitbox.enabled = true;
     }
@@ -237,8 +254,72 @@ public class PlayerController : MonoBehaviour
             _attackHitbox.enabled = false;
     }
 
+    /// <summary>AttackHitboxTrigger(자식)가 트리거 진입을 감지하면 호출</summary>
+    public void OnAttackHitboxTriggerEnter(Collider other)
+    {
+        // 몬스터 레이어가 아니면 무시
+        if (((1 << other.gameObject.layer) & _monsterLayer) == 0)
+            return;
+
+        // 같은 스윙에서 이미 맞춘 대상이면 무시 (중복 데미지 방지)
+        if (_alreadyHit.Contains(other))
+            return;
+        _alreadyHit.Add(other);
+
+        if (other.TryGetComponent<IDamageable>(out IDamageable target))
+        {
+            // TODO: PlayerStatManager의 최종 공격력으로 교체
+            target.TakeDamage(20);
+        }
+    }
+
     public void OnAttackAnimationEnd()
     {
         ChangeActionState(HasMoveInput() ? PlayerActionState.MOVE : PlayerActionState.IDLE);
+    }
+
+    // ─────────────────────────────────────────────
+    // Skill (검: 회전 베기)
+    // Attack과 달리 쿨타임 있음, 전방 Box가 아니라 자기 자신 중심 원형(OverlapSphere) 판정.
+    // ─────────────────────────────────────────────
+
+    void TryStartSkill()
+    {
+        if (_skillCooldownTimer > 0f)
+            return;
+
+        // 기획서 FSM 규칙: Skill은 Idle/Move에서만 진입 가능
+        if (_currentState != PlayerActionState.IDLE && _currentState != PlayerActionState.MOVE)
+            return;
+
+        EnterSkill();
+    }
+
+    void EnterSkill()
+    {
+        _skillCooldownTimer = _skillCooldown;
+        ChangeActionState(PlayerActionState.SKILL);
+    }
+
+    /// <summary>회전 베기 판정 프레임에 Animation Event로 연결 - 반경 안 몬스터 전체를 즉시 조회</summary>
+    public void OnSkillHitCheck()
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position, _skillRadius, _monsterLayer);
+        foreach (Collider hit in hits)
+        {
+            // TODO: 몬스터 쪽 TakeDamage 인터페이스 완성되면 교체
+            Debug.Log("스킬 판정 성공 : " + hit.name);
+        }
+    }
+
+    public void OnSkillAnimationEnd()
+    {
+        ChangeActionState(HasMoveInput() ? PlayerActionState.MOVE : PlayerActionState.IDLE);
+    }
+
+    void UpdateSkillCooldown()
+    {
+        if (_skillCooldownTimer > 0f)
+            _skillCooldownTimer -= Time.deltaTime;
     }
 }

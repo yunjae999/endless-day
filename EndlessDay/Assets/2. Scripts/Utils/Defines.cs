@@ -33,4 +33,15 @@ namespace Defines
 
         DEATH = 50
     }
+
+    public enum MonsterActionState
+    {
+        IDLE,
+        PATROL,
+        CHASE,
+        ATTACk,
+        HIT,
+
+        DEATH = 50
+    }
 }

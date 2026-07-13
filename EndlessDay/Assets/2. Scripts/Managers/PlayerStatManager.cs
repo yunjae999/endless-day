@@ -16,6 +16,8 @@ public class PlayerStatManager : MonoBehaviour
     public void InitBaseStats()
     {
         DataTable baseStatTable = TableDataManager._instance.Get(Defines.TableName.PlayerBaseStatTable);
+        if (TableDataManager._instance == null)
+            Debug.Log("null");
 
         _baseMaxHP = baseStatTable.ToI(1, "MaxHP");
         _baseAttackPower = baseStatTable.ToI(1, "AttackPower");
