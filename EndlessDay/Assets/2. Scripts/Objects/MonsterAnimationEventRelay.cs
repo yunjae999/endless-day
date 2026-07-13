@@ -14,23 +14,25 @@ public class MonsterAnimationEventRelay : MonoBehaviour
         _controller = GetComponentInParent<MonsterController>();
     }
 
-    //public void OnAttackHitCheck()
-    //{
-    //    _controller.OnAttackHitCheck();
-    //}
+    public void OnAttackHitCheck()
+    {
+        Debug.Log("공격 판정 이벤트 호출됨");   // 임시
 
-    //public void OnAttackAnimationEnd()
-    //{
-    //    _controller.OnAttackAnimationEnd();
-    //}
+        _controller.OnAttackHitCheck();
+    }
 
-    //public void OnHitAnimationEnd()
-    //{
-    //    _controller.OnHitAnimationEnd();
-    //}
+    public void OnAttackAnimationEnd()
+    {
+        _controller.OnAttackAnimationEnd();
+    }
 
-    //public void OnDeathAnimationEnd()
-    //{
-    //    _controller.OnDeathAnimationEnd();
-    //}
+    public void OnHitAnimationEnd()
+    {
+        _controller.OnHitAnimationEnd();
+    }
+
+    public void OnDeathAnimationEnd()
+    {
+        _controller.OnDeathAnimationEnd();
+    }
 }

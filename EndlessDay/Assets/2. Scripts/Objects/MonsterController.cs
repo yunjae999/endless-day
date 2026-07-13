@@ -2,11 +2,15 @@ using UnityEngine;
 using UnityEngine.AI;
 using Defines;
 
-public class MonsterController : MonoBehaviour
+public class MonsterController : MonoBehaviour, IDamageable
 {
     Animator _animator;
     NavMeshAgent _agent;
     MonsterActionState _currentState;
+
+    [Header("스탯")]
+    [SerializeField] int _maxHP = 30;
+    [SerializeField] int _attackDamage = 10;
 
     [Header("비추적 상태 (Idle ↔ Patrol)")]
     [SerializeField] float _idleMinTime = 2f;
@@ -14,7 +18,7 @@ public class MonsterController : MonoBehaviour
     [SerializeField] float _patrolMinTime = 2f;
     [SerializeField] float _patrolMaxTime = 4f;
     [SerializeField] float _patrolSpeed = 1f;
-    [SerializeField] float _patrolRadius = 5f;   // 랜덤 방향 대신 반경 내 랜덤 지점
+    [SerializeField] float _patrolRadius = 5f;
 
     float _stateTimer;
 
@@ -23,14 +27,23 @@ public class MonsterController : MonoBehaviour
     [SerializeField] float _destinationUpdateInterval = 0.2f;
     float _destinationTimer;
 
+    [Header("Attack")]
+    [SerializeField] float _attackCooldown = 1.5f;
+    float _attackCooldownTimer;
+
     Transform _target;
     bool _isPlayerDetected;
     bool _isPlayerInChaseRange;
+    bool _isPlayerInAttackRange;
+
+    public int CurrentHP { get; private set; }
+    public bool IsDead => CurrentHP <= 0;
 
     void Awake()
     {
         _animator = GetComponentInChildren<Animator>();
         _agent = GetComponent<NavMeshAgent>();
+        CurrentHP = _maxHP;
     }
 
     void Start()
@@ -50,11 +63,31 @@ public class MonsterController : MonoBehaviour
     void MonsterProcess()
     {
         _stateTimer -= Time.deltaTime;
+        UpdateAttackCooldown();
+
+        // Attack/Hit/Death 중엔 Animation Event가 상태를 관리하므로 Chase 판단이 끼어들지 않게 막음
+        if (_currentState == MonsterActionState.ATTACK ||
+            _currentState == MonsterActionState.HIT ||
+            _currentState == MonsterActionState.DEATH)
+            return;
 
         bool shouldChase = _isPlayerDetected || _isPlayerInChaseRange;
 
         if (shouldChase)
         {
+            if (_isPlayerInAttackRange)
+            {
+                if (_attackCooldownTimer <= 0f)
+                {
+                    EnterAttack();
+                    return;
+                }
+
+                if (_currentState != MonsterActionState.ATTACK_IDLE)
+                    EnterAttackIdle();
+                return;   // 대기 중이므로 이동 갱신 없음
+            }
+
             if (_currentState != MonsterActionState.CHASE)
                 EnterChase();
 
@@ -70,12 +103,12 @@ public class MonsterController : MonoBehaviour
                 break;
 
             case MonsterActionState.PATROL:
-                // 목적지에 도착했거나 시간이 다 되면 Idle로
                 if (_stateTimer <= 0f || (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance))
                     EnterIdle();
                 break;
 
             case MonsterActionState.CHASE:
+            case MonsterActionState.ATTACK_IDLE:
                 EnterIdle();
                 break;
         }
@@ -90,6 +123,10 @@ public class MonsterController : MonoBehaviour
         if (_animator != null)
             _animator.SetInteger("ActionState", (int)_currentState);
     }
+
+    // ─────────────────────────────────────────────
+    // Idle / Patrol
+    // ─────────────────────────────────────────────
 
     void EnterIdle()
     {
@@ -125,6 +162,10 @@ public class MonsterController : MonoBehaviour
         return false;
     }
 
+    // ─────────────────────────────────────────────
+    // Chase
+    // ─────────────────────────────────────────────
+
     void EnterChase()
     {
         _agent.speed = _chaseSpeed;
@@ -146,6 +187,52 @@ public class MonsterController : MonoBehaviour
         _agent.SetDestination(_target.position);
     }
 
+    // ─────────────────────────────────────────────
+    // Attack
+    // ─────────────────────────────────────────────
+
+    void EnterAttack()
+    {
+        _agent.isStopped = true;   // 제자리에서 공격
+        ChangeActionState(MonsterActionState.ATTACK);
+    }
+
+    void EnterAttackIdle()
+    {
+        _agent.isStopped = true;
+        ChangeActionState(MonsterActionState.ATTACK_IDLE);
+    }
+
+    void UpdateAttackCooldown()
+    {
+        if (_attackCooldownTimer > 0f)
+            _attackCooldownTimer -= Time.deltaTime;
+    }
+
+    /// <summary>공격 판정 프레임에 Animation Event로 연결</summary>
+    public void OnAttackHitCheck()
+    {
+        _attackCooldownTimer = _attackCooldown;
+
+        if (_isPlayerInAttackRange && _target != null && _target.TryGetComponent<IDamageable>(out IDamageable player))
+        {
+            player.TakeDamage(_attackDamage);
+        }
+    }
+
+    /// <summary>공격 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
+    public void OnAttackAnimationEnd()
+    {
+        if (_isPlayerInAttackRange)
+            EnterAttackIdle();
+        else
+            EnterChase();
+    }
+
+    // ─────────────────────────────────────────────
+    // MonsterDetectionZone(자식)이 호출
+    // ─────────────────────────────────────────────
+
     public void OnZoneEnter(MonsterZoneType zone)
     {
         switch (zone)
@@ -155,6 +242,9 @@ public class MonsterController : MonoBehaviour
                 break;
             case MonsterZoneType.ChaseReset:
                 _isPlayerInChaseRange = true;
+                break;
+            case MonsterZoneType.Attack:
+                _isPlayerInAttackRange = true;
                 break;
         }
     }
@@ -169,6 +259,40 @@ public class MonsterController : MonoBehaviour
             case MonsterZoneType.ChaseReset:
                 _isPlayerInChaseRange = false;
                 break;
+            case MonsterZoneType.Attack:
+                _isPlayerInAttackRange = false;
+                break;
         }
+    }
+
+    // ─────────────────────────────────────────────
+    // IDamageable
+    // ─────────────────────────────────────────────
+
+    public void TakeDamage(int amount)
+    {
+        if (IsDead)
+            return;
+
+        CurrentHP = Mathf.Max(0, CurrentHP - amount);
+        _agent.isStopped = true;
+
+        ChangeActionState(IsDead ? MonsterActionState.DEATH : MonsterActionState.HIT);
+    }
+
+    /// <summary>피격 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
+    public void OnHitAnimationEnd()
+    {
+        if (IsDead)
+            return;
+        _agent.isStopped = false;
+        ChangeActionState(MonsterActionState.CHASE);
+    }
+
+    /// <summary>사망 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
+    public void OnDeathAnimationEnd()
+    {
+        // TODO: 경험치/골드 드랍
+        Destroy(gameObject);
     }
 }

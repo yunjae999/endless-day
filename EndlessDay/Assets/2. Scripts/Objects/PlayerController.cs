@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IDamageable
 {
     Animator _animator;
     PlayerActionState _currentState;
@@ -13,6 +13,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float _rotateSpeed = 2f;
     bool _runInput;
     bool _isRun;
+
+    [Header("HP")]
+    [SerializeField] int _maxHP = 100;   // 기획서 기본 스탯
+
+    public int CurrentHP { get; private set; }
+    public bool IsDead => CurrentHP <= 0;
 
     [Header("Roll")]
     [SerializeField] float _rollDistance = 7.5f;
@@ -40,6 +46,7 @@ public class PlayerController : MonoBehaviour
         _animator = GetComponentInChildren<Animator>();
         _statManager = GetComponentInChildren<PlayerStatManager>();
         _currentState = PlayerActionState.IDLE;
+        CurrentHP = _maxHP;
 
         if (_attackHitbox != null)
             _attackHitbox.enabled = false;
@@ -56,6 +63,10 @@ public class PlayerController : MonoBehaviour
     }
     void PlayerProcess()
     {
+        // Hit/Death 중엔 Animation Event가 상태를 관리하므로 여기서 개입하지 않음
+        if (_currentState == PlayerActionState.HIT || _currentState == PlayerActionState.DEATH)
+            return;
+
         switch (_currentState)
         {
             case PlayerActionState.IDLE:
@@ -321,5 +332,37 @@ public class PlayerController : MonoBehaviour
     {
         if (_skillCooldownTimer > 0f)
             _skillCooldownTimer -= Time.deltaTime;
+    }
+
+    // ─────────────────────────────────────────────
+    // IDamageable
+    // ─────────────────────────────────────────────
+
+    public void TakeDamage(int amount)
+    {
+        if (IsDead)
+            return;
+
+        if (IsInvincible)   // Roll 무적 구간이면 데미지 무시
+            return;
+
+        CurrentHP = Mathf.Max(0, CurrentHP - amount);
+
+        ChangeActionState(IsDead ? PlayerActionState.DEATH : PlayerActionState.HIT);
+    }
+
+    /// <summary>피격 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
+    public void OnHitAnimationEnd()
+    {
+        if (IsDead)
+            return;
+        ChangeActionState(PlayerActionState.IDLE);
+    }
+
+    /// <summary>사망 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
+    public void OnDeathAnimationEnd()
+    {
+        // TODO: 게임 오버 처리 / 마을 복귀 등 (기획서 "반복되는 하루" 흐름과 연결 예정)
+        Debug.Log("플레이어 사망 처리 필요 (TODO)");
     }
 }

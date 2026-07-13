@@ -26,9 +26,12 @@ public class MonsterDetectionZone : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log("Trigger: " + other.gameObject.name + " / Tag: " + other.tag);   // 조건 없이, 리턴 전에
+
         if (!other.CompareTag("Player"))
             return;
         _controller.OnZoneEnter(_zoneType);
+        Debug.Log("Player" + _zoneType);
     }
 
     void OnTriggerExit(Collider other)
@@ -36,11 +39,6 @@ public class MonsterDetectionZone : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
         _controller.OnZoneExit(_zoneType);
-    }
-
-    /// <summary>이 존의 콜라이더를 켜거나 끈다 (MonsterController가 호출)</summary>
-    public void SetActive(bool active)
-    {
-        _collider.enabled = active;
+        Debug.Log("Player exit" + _zoneType);
     }
 }

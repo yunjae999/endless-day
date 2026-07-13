@@ -44,4 +44,24 @@ public class PlayerAnimationEventRelay : MonoBehaviour
     {
         _controller.OnAttackAnimationEnd();
     }
+
+    public void OnSkillHitCheck()
+    {
+        _controller.OnSkillHitCheck();
+    }
+
+    public void OnSkillAnimationEnd()
+    {
+        _controller.OnSkillAnimationEnd();
+    }
+
+    public void OnHitAnimationEnd()
+    {
+        _controller.OnHitAnimationEnd();
+    }
+
+    public void OnDeathAnimationEnd()
+    {
+        _controller.OnDeathAnimationEnd();
+    }
 }

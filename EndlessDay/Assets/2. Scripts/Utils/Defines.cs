@@ -39,7 +39,8 @@ namespace Defines
         IDLE,
         PATROL,
         CHASE,
-        ATTACk,
+        ATTACK,
+        ATTACK_IDLE,
         HIT,
 
         DEATH = 50
