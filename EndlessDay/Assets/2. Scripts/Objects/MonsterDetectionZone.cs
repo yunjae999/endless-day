@@ -26,8 +26,6 @@ public class MonsterDetectionZone : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Trigger: " + other.gameObject.name + " / Tag: " + other.tag);   // 조건 없이, 리턴 전에
-
         if (!other.CompareTag("Player"))
             return;
         _controller.OnZoneEnter(_zoneType);

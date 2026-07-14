@@ -95,7 +95,7 @@ public class AuthController : MonoBehaviour
     void OnRegisterOK()
     {
         _loginPanel.OnClickTabLogin();
-        _popup.Show("회원가입에 성공했습니다. \n로그인 해주세요.", UIPopup.PopupType.Success);
+        _popup.Show("회원가입에 성공했습니다. 로그인 해주세요.", UIPopup.PopupType.Success);
     }
 
     void OnRegisterFail(int reasonCode)
@@ -135,6 +135,8 @@ public class AuthController : MonoBehaviour
 
     void OnLoginOK(LoginResultData data)
     {
+        GameSession._instance.LoadFromLoginResult(data);
+
         // TODO : VillageScene 전환 (씬 준비되면 여기서 처리)
         _popup.Show("로그인에 성공했습니다. (" + data.Nickname + ")", UIPopup.PopupType.Success);
     }

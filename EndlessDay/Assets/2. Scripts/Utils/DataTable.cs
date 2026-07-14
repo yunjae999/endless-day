@@ -74,4 +74,8 @@ public class DataTable
         float.TryParse(findValue, out val);
         return val;
     }
+    public IEnumerable<int> GetAllKeys()
+    {
+        return _sheet.Keys;
+    }
 }
