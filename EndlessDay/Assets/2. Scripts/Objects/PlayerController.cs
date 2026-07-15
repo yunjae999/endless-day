@@ -318,8 +318,11 @@ public class PlayerController : MonoBehaviour, IDamageable
         Collider[] hits = Physics.OverlapSphere(transform.position, _skillRadius, _monsterLayer);
         foreach (Collider hit in hits)
         {
-            // TODO: 몬스터 쪽 TakeDamage 인터페이스 완성되면 교체
-            Debug.Log("스킬 판정 성공 : " + hit.name);
+            if (hit.TryGetComponent<IDamageable>(out IDamageable target))
+            {
+                // TODO: PlayerStatManager의 최종 스킬 데미지로 교체 (기획서: 검 스킬 계수 220%)
+                target.TakeDamage(44);
+            }
         }
     }
 
