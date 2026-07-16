@@ -10,6 +10,7 @@ public abstract class ItemData
     public string ItemName;
     public string IconPath;
     public string Description;
+    public int Price;   // 구매가. 판매가는 ShopManager에서 이 값의 비율로 계산
 
     public abstract ItemCategory Category { get; }
 }

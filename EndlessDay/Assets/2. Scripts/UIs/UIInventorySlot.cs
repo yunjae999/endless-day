@@ -10,10 +10,12 @@ public enum SlotType
 }
 
 /// <summary>
-/// 슬롯 하나(인벤토리 그리드 칸 또는 장착 슬롯)의 표시 + 드래그 시작/드롭 감지.
+/// 슬롯 하나(인벤토리 그리드 칸 또는 장착 슬롯)의 표시 + 드래그 시작/드롭 감지 + 호버 툴팁.
 /// 실제로 옮길지 말지 판단은 하지 않고, 컨트롤러에게 "여기서 저기로 옮겨줘"라고 요청만 한다.
 /// </summary>
-public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
+public class UIInventorySlot : MonoBehaviour,
+    IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler,
+    IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] Image _icon;
     [SerializeField] TextMeshProUGUI _quantityText;
@@ -22,6 +24,9 @@ public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     int _slotIndex;
     UIInventoryController _controller;
     bool _hasItem;
+
+    string _itemName;
+    string _description;
 
     public SlotType SlotType => _slotType;
     public int SlotIndex => _slotIndex;
@@ -34,12 +39,14 @@ public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         _slotIndex = slotIndex;
     }
 
-    public void SetContent(Sprite icon, int quantity)
+    public void SetContent(Sprite icon, int quantity, string itemName = "", string description = "")
     {
         _hasItem = true;
         _icon.sprite = icon;
         _icon.enabled = true;
         _quantityText.text = quantity > 1 ? quantity.ToString() : "";
+        _itemName = itemName;
+        _description = description;
     }
 
     public void SetEmpty()
@@ -48,6 +55,8 @@ public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         _icon.sprite = null;
         _icon.enabled = false;
         _quantityText.text = "";
+        _itemName = "";
+        _description = "";
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -55,6 +64,7 @@ public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         if (!_hasItem)
             return;
 
+        UITooltip._instance.Hide();   // 드래그 시작하면 툴팁은 방해되니 숨김
         DragGhost._instance.Show(_icon.sprite);
         _icon.enabled = false;   // 원래 자리는 비워 보이게 (드래그 중임을 표시)
     }
@@ -77,27 +87,26 @@ public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
     public void OnDrop(PointerEventData eventData)
     {
-        Debug.Log("OnDrop 호출됨 - 도착지 슬롯: " + _slotIndex + " / " + _slotType);
-
         if (eventData.pointerDrag == null)
-        {
-            Debug.Log("pointerDrag가 null임");   // 임시
             return;
-        }
 
         UIInventorySlot sourceSlot = eventData.pointerDrag.GetComponent<UIInventorySlot>();
-        if (sourceSlot == null)
-        {
-            Debug.Log("sourceSlot을 못 찾음");   // 임시
+        if (sourceSlot == null || sourceSlot == this)
             return;
-        }
-        if (sourceSlot == this)
-        {
-            Debug.Log("출발지=도착지 같음");   // 임시
-            return;
-        }
 
-        Debug.Log("RequestMove 호출 - 출발: " + sourceSlot.SlotIndex + " 도착: " + _slotIndex);   // 임시
         _controller.RequestMove(sourceSlot, this);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!_hasItem)
+            return;
+
+        UITooltip._instance.Show(_itemName, _description, eventData.position);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        UITooltip._instance.Hide();
     }
 }

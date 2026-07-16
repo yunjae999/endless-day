@@ -59,6 +59,37 @@ public class InventoryModel
         return quantity;   // 0이면 전부 담김, 남으면 인벤토리 꽉 찬 것
     }
 
+    /// <summary>인벤토리 칸에서 아이템을 제거 (판매 시 사용). 장착 슬롯은 대상이 아님 - 장착 중인 건 판매 불가</summary>
+    public bool RemoveItem(int itemID, int quantity)
+    {
+        // 실제로 빼기 전에 개수가 충분한지 먼저 확인 (중간에 실패해서 일부만 빠지는 걸 방지)
+        int totalOwned = 0;
+        for (int i = 0; i < INVENTORY_SIZE; i++)
+        {
+            if (InventorySlots[i].ItemID == itemID)
+                totalOwned += InventorySlots[i].Quantity;
+        }
+
+        if (totalOwned < quantity)
+            return false;
+
+        int remaining = quantity;
+        for (int i = 0; i < INVENTORY_SIZE && remaining > 0; i++)
+        {
+            if (InventorySlots[i].ItemID != itemID)
+                continue;
+
+            int take = remaining < InventorySlots[i].Quantity ? remaining : InventorySlots[i].Quantity;
+            InventorySlots[i].Quantity -= take;
+            remaining -= take;
+
+            if (InventorySlots[i].Quantity <= 0)
+                InventorySlots[i] = ItemStack.Empty;
+        }
+
+        return true;
+    }
+
     // ─────────────────────────────────────────────
     // 인벤토리 내부 이동 (드래그 앤 드롭)
     // ─────────────────────────────────────────────

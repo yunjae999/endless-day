@@ -7,6 +7,8 @@
         CheckUsername = 1,
         Register = 2,
         Login = 3,
+        BuyItem = 4,
+        SellItem = 5,
     }
 
     public enum SendProtocol      // 서버 → 클라
@@ -21,6 +23,8 @@
         LoginFail = 7,
         InventoryCount = 8,
         InventoryItem = 9,
+        BuyResult = 10,
+        SellResult = 11,
     }
 }
 
@@ -33,6 +37,8 @@ namespace ClientServerProtocol
         CheckUsername = 1,
         Register = 2,
         Login = 3,
+        BuyItem = 4,
+        SellItem = 5,
     }
 
     public enum ReceiveProtocol   // 서버 → 클라
@@ -47,5 +53,7 @@ namespace ClientServerProtocol
         LoginFail = 7,
         InventoryCount = 8,
         InventoryItem = 9,
+        BuyResult = 10,
+        SellResult = 11,
     }
 }

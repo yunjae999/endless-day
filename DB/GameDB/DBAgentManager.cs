@@ -6,7 +6,7 @@ namespace GameDB
 {
     /// <summary>
     /// MySQL(endlessday DB)에 직접 접근하는 클래스.
-    /// 회원가입/로그인 관련 쿼리만 담당 (범위: 로그인/회원가입).
+    /// 회원가입/로그인/인벤토리/상점 관련 쿼리를 담당.
     /// </summary>
     class DBAgentManager
     {
@@ -119,7 +119,7 @@ namespace GameDB
                 MySqlCommand cmdPlayerData = new MySqlCommand(queryPlayerData, _connection, transaction);
                 cmdPlayerData.Parameters.AddWithValue("@userId", newUserId);
                 cmdPlayerData.Parameters.AddWithValue("@unlockedWeapons", "[1]");
-                cmdPlayerData.Parameters.AddWithValue("@equippedEquipment", "[0,0,0,0]");
+                cmdPlayerData.Parameters.AddWithValue("@equippedEquipment", "[0,0,0,0,0,0,0]");
                 cmdPlayerData.ExecuteNonQuery();
 
                 transaction.Commit();
@@ -135,7 +135,7 @@ namespace GameDB
         }
 
         // ─────────────────────────────────────────────
-        // 로그인 성공 시 PlayerData 로드 (실시간 조회 유지 - 골드/진행상황은 계속 바뀌므로 캐싱 안 함)
+        // 로그인 성공 시 PlayerData 로드 (실시간 조회 유지)
         // ─────────────────────────────────────────────
 
         public PlayerDataRow GetPlayerData(int userId)
@@ -204,6 +204,136 @@ namespace GameDB
             }
             return result;
         }
+
+        // ─────────────────────────────────────────────
+        // 상점 - 가격 캐싱용 전체 조회 (서버 시작 시 1회)
+        // ─────────────────────────────────────────────
+
+        public List<ItemPriceRow> GetAllItemPrices()
+        {
+            List<ItemPriceRow> result = new List<ItemPriceRow>();
+            string query = string.Format("SELECT ItemID, ItemType, Price FROM {0}.ItemPrice", _dbName);
+            try
+            {
+                MySqlCommand cmd = new MySqlCommand(query, _connection);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    result.Add(new ItemPriceRow
+                    {
+                        ItemID = reader.GetInt32("ItemID"),
+                        ItemType = reader.GetInt32("ItemType"),
+                        Price = reader.GetInt32("Price")
+                    });
+                }
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[DB] GetAllItemPrices 실패 : {0}", ex.Message);
+            }
+            return result;
+        }
+
+        // ─────────────────────────────────────────────
+        // 상점 - 구매/판매 (트랜잭션으로 골드/인벤토리 동시 반영)
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 구매 반영. 골드 검증은 서버 메모리에서 이미 끝났으므로, 여기선 저장만 한다.
+        /// 같은 아이템을 이미 갖고 있으면 개수만 +1 (PlayerInventory에 UserID+ItemID UNIQUE 필요).
+        /// </summary>
+        public bool BuyItem(int userId, int itemType, int itemId, int newGold)
+        {
+            MySqlTransaction transaction = _connection.BeginTransaction();
+            try
+            {
+                string goldQuery = string.Format(
+                    "UPDATE {0}.PlayerData SET Gold = @gold WHERE UserID = @userId", _dbName);
+                MySqlCommand goldCmd = new MySqlCommand(goldQuery, _connection, transaction);
+                goldCmd.Parameters.AddWithValue("@gold", newGold);
+                goldCmd.Parameters.AddWithValue("@userId", userId);
+                goldCmd.ExecuteNonQuery();
+
+                string upsertQuery = string.Format(
+                    "INSERT INTO {0}.PlayerInventory (UserID, ItemType, ItemID, Quantity) VALUES (@userId, @itemType, @itemId, 1) " +
+                    "ON DUPLICATE KEY UPDATE Quantity = Quantity + 1", _dbName);
+                MySqlCommand upsertCmd = new MySqlCommand(upsertQuery, _connection, transaction);
+                upsertCmd.Parameters.AddWithValue("@userId", userId);
+                upsertCmd.Parameters.AddWithValue("@itemType", itemType);
+                upsertCmd.Parameters.AddWithValue("@itemId", itemId);
+                upsertCmd.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                Console.WriteLine("[DB] BuyItem 실패 : {0}", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 판매 반영. 보유 수량을 트랜잭션 안에서 직접 확인 - 없으면 실패(false)로 롤백, 골드도 그대로 유지됨.
+        /// </summary>
+        public bool SellItem(int userId, int itemId, int newGold)
+        {
+            MySqlTransaction transaction = _connection.BeginTransaction();
+            try
+            {
+                string checkQuery = string.Format(
+                    "SELECT Quantity FROM {0}.PlayerInventory WHERE UserID = @userId AND ItemID = @itemId FOR UPDATE", _dbName);
+                MySqlCommand checkCmd = new MySqlCommand(checkQuery, _connection, transaction);
+                checkCmd.Parameters.AddWithValue("@userId", userId);
+                checkCmd.Parameters.AddWithValue("@itemId", itemId);
+
+                object quantityObj = checkCmd.ExecuteScalar();
+                int currentQuantity = quantityObj != null ? Convert.ToInt32(quantityObj) : 0;
+
+                if (currentQuantity < 1)
+                {
+                    transaction.Rollback();
+                    return false;
+                }
+
+                if (currentQuantity == 1)
+                {
+                    string deleteQuery = string.Format(
+                        "DELETE FROM {0}.PlayerInventory WHERE UserID = @userId AND ItemID = @itemId", _dbName);
+                    MySqlCommand deleteCmd = new MySqlCommand(deleteQuery, _connection, transaction);
+                    deleteCmd.Parameters.AddWithValue("@userId", userId);
+                    deleteCmd.Parameters.AddWithValue("@itemId", itemId);
+                    deleteCmd.ExecuteNonQuery();
+                }
+                else
+                {
+                    string decrementQuery = string.Format(
+                        "UPDATE {0}.PlayerInventory SET Quantity = Quantity - 1 WHERE UserID = @userId AND ItemID = @itemId", _dbName);
+                    MySqlCommand decrementCmd = new MySqlCommand(decrementQuery, _connection, transaction);
+                    decrementCmd.Parameters.AddWithValue("@userId", userId);
+                    decrementCmd.Parameters.AddWithValue("@itemId", itemId);
+                    decrementCmd.ExecuteNonQuery();
+                }
+
+                string goldQuery = string.Format(
+                    "UPDATE {0}.PlayerData SET Gold = @gold WHERE UserID = @userId", _dbName);
+                MySqlCommand goldCmd = new MySqlCommand(goldQuery, _connection, transaction);
+                goldCmd.Parameters.AddWithValue("@gold", newGold);
+                goldCmd.Parameters.AddWithValue("@userId", userId);
+                goldCmd.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                Console.WriteLine("[DB] SellItem 실패 : {0}", ex.Message);
+                return false;
+            }
+        }
     }
 
     // ─────────────────────────────────────────────
@@ -232,5 +362,12 @@ namespace GameDB
         public int ItemType { get; set; }
         public int ItemID { get; set; }
         public int Quantity { get; set; }
+    }
+
+    class ItemPriceRow
+    {
+        public int ItemID { get; set; }
+        public int ItemType { get; set; }
+        public int Price { get; set; }
     }
 }

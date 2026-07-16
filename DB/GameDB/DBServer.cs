@@ -153,6 +153,18 @@ namespace GameDB
                         Handle_GetPlayerInventory(packet);
                         break;
 
+                    case ReceiveProtocol.GetAllItemPrices:
+                        Handle_GetAllItemPrices();
+                        break;
+
+                    case ReceiveProtocol.BuyItem:
+                        Handle_BuyItem(packet);
+                        break;
+
+                    case ReceiveProtocol.SellItem:
+                        Handle_SellItem(packet);
+                        break;
+
                     default:
                         Console.WriteLine("[DBServer] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -251,6 +263,52 @@ namespace GameDB
             }
 
             Console.WriteLine("[DBServer] 인벤토리 전송 완료 - UserID : {0}, 개수 : {1}", req._userId, items.Count);
+        }
+
+        void Handle_GetAllItemPrices()
+        {
+            List<ItemPriceRow> prices = _db.GetAllItemPrices();
+
+            DB_ItemPriceCount countData = new DB_ItemPriceCount { _count = prices.Count };
+            Packet countPacket = ConvertPacket.MakePacket((int)SendProtocol.ItemPriceCount, countData);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(countPacket));
+
+            foreach (ItemPriceRow price in prices)
+            {
+                DB_ItemPrice priceData = new DB_ItemPrice { _itemId = price.ItemID, _itemType = price.ItemType, _price = price.Price };
+                Packet pricePacket = ConvertPacket.MakePacket((int)SendProtocol.ItemPrice, priceData);
+                _sendQueue.Enqueue(ConvertPacket.ToBytes(pricePacket));
+            }
+
+            Console.WriteLine("[DBServer] 아이템 가격 전송 완료 - {0}개", prices.Count);
+        }
+
+        void Handle_BuyItem(Packet packet)
+        {
+            DB_BuyItem_Request req =
+                (DB_BuyItem_Request)ConvertPacket.UnpackData(packet, typeof(DB_BuyItem_Request));
+
+            bool success = _db.BuyItem(req._userId, req._itemType, req._itemId, req._newGold);
+
+            DB_BuyItem_Result result = new DB_BuyItem_Result { _result = success ? 1 : 0 };
+            Packet resultPacket = ConvertPacket.MakePacket((int)SendProtocol.BuyItemResult, result);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(resultPacket));
+
+            Console.WriteLine("[DBServer] 구매 처리 - UserID : {0}, ItemID : {1} : {2}", req._userId, req._itemId, success ? "성공" : "실패");
+        }
+
+        void Handle_SellItem(Packet packet)
+        {
+            DB_SellItem_Request req =
+                (DB_SellItem_Request)ConvertPacket.UnpackData(packet, typeof(DB_SellItem_Request));
+
+            bool success = _db.SellItem(req._userId, req._itemId, req._newGold);
+
+            DB_SellItem_Result result = new DB_SellItem_Result { _result = success ? 1 : 0 };
+            Packet resultPacket = ConvertPacket.MakePacket((int)SendProtocol.SellItemResult, result);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(resultPacket));
+
+            Console.WriteLine("[DBServer] 판매 처리 - UserID : {0}, ItemID : {1} : {2}", req._userId, req._itemId, success ? "성공" : "실패");
         }
 
         public void Release()

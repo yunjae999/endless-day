@@ -84,4 +84,36 @@ public class GameSession : TSingleton<GameSession>
     {
         Gold += amount;
     }
+
+    /// <summary>골드가 충분하면 차감하고 true, 부족하면 아무것도 안 하고 false</summary>
+    public bool TrySpendGold(int amount)
+    {
+        if (Gold < amount)
+            return false;
+
+        Gold -= amount;
+        return true;
+    }
+
+    // ─────────────────────────────────────────────
+    // 상점 - 서버 응답을 실제 상태에 반영
+    // (구매/판매 버튼 클릭 → NetworkManager.SendBuyItem/SendSellItem 호출은 UI 쪽에서,
+    //  서버 응답(OnBuyResult/OnSellResult)을 받으면 이 메서드들을 호출해서 반영)
+    // ─────────────────────────────────────────────
+
+    public void ApplyBuyResult(bool success, int itemId, int newGold)
+    {
+        Gold = newGold;   // 성공/실패 상관없이 서버가 계산한 최종 골드로 항상 동기화
+
+        if (success)
+            Inventory.AddItem(itemId, 1);
+    }
+
+    public void ApplySellResult(bool success, int itemId, int newGold)
+    {
+        Gold = newGold;
+
+        if (success)
+            Inventory.RemoveItem(itemId, 1);
+    }
 }

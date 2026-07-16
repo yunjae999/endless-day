@@ -200,6 +200,72 @@ namespace DefinePacket
         public int _quantity;
     }
 
+    /// <summary>서버 → DB : 서버 시작 시 전체 아이템 가격 캐싱용 요청 (payload 없음)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_ItemPriceCount
+    {
+        public int _count;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_ItemPrice
+    {
+        public int _itemId;
+        public int _itemType;   // 1=장비, 2=소비 - 서버가 구매 시 PlayerInventory에 넣을 때 필요
+        public int _price;
+    }
+
+    /// <summary>서버 → DB : 구매 반영 (골드는 서버가 이미 검증/계산 완료, DB는 저장만)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_BuyItem_Request
+    {
+        public int _userId;
+        public int _itemType;
+        public int _itemId;
+        public int _newGold;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_BuyItem_Result
+    {
+        public int _result;
+    }
+
+    /// <summary>서버 → DB : 판매 반영. 보유 수량 검증은 DB가 트랜잭션 안에서 직접 확인</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_SellItem_Request
+    {
+        public int _userId;
+        public int _itemId;
+        public int _newGold;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_SellItem_Result
+    {
+        public int _result;   // 1=성공, 0=실패(보유 수량 부족 등)
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Shop_Buy_Request
+    {
+        public int _itemId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Shop_Sell_Request
+    {
+        public int _itemId;
+    }
+
+    /// <summary>서버 → 클라 : 구매/판매 결과. 실패해도 이유는 없음(가격/보유량은 서버가 이미 검증했으므로 단순 성공여부만)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Shop_Trade_Result
+    {
+        public int _result;      // 1=성공, 0=실패
+        public int _itemId;
+        public int _newGold;     // 성공 시 갱신된 골드
+    }
+
     // ─────────────────────────────────────────────
     // 변환 유틸
     // ─────────────────────────────────────────────

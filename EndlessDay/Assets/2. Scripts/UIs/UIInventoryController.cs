@@ -123,7 +123,7 @@ public class UIInventoryController : MonoBehaviour
 
         ItemData data = ItemManager._instance.Get(stack.ItemID);
         Sprite icon = Resources.Load<Sprite>(data.IconPath);   // 아이콘 로드 방식은 프로젝트 리소스 구조에 맞게 조정
-        slot.SetContent(icon, stack.Quantity);
+        slot.SetContent(icon, stack.Quantity, data.ItemName, data.Description);
     }
 
     void RefreshEquipSlot(int index)
@@ -139,6 +139,6 @@ public class UIInventoryController : MonoBehaviour
 
         ItemData data = ItemManager._instance.Get(itemID);
         Sprite icon = Resources.Load<Sprite>(data.IconPath);
-        slot.SetContent(icon, 1);
+        slot.SetContent(icon, 1, data.ItemName, data.Description);
     }
 }

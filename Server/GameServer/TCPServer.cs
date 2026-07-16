@@ -21,6 +21,7 @@ namespace GameServer
         public int SocketId { get; set; }
         public int UserId { get; set; }
         public string Nickname { get; set; }
+        public int Gold { get; set; }   // 로그인 시 로드, 구매/판매마다 여기서 검증+갱신 (DB는 반영만)
     }
 
     /// <summary>서버 메모리에 캐싱해두는 유저 정보 (로그인/중복확인에 사용, DB 왕복 없이 즉시 검증)</summary>
@@ -43,6 +44,7 @@ namespace GameServer
         Dictionary<int, Client> _clientList;   // key : socketId, 로그인 후
 
         Dictionary<string, UserInfo> _userList; // key : Username, 서버 시작 시 전체 로드 + 회원가입마다 갱신
+        Dictionary<int, (int itemType, int price)> _itemPriceCache;   // key : ItemID - 서버 시작 시 전체 로드
 
         Queue<KeyValuePair<int, byte[]>> _recieveQueue;
         Queue<KeyValuePair<int, byte[]>> _sendQueue;
@@ -64,6 +66,7 @@ namespace GameServer
             _guestList = new Dictionary<int, Guest>();
             _clientList = new Dictionary<int, Client>();
             _userList = new Dictionary<string, UserInfo>();
+            _itemPriceCache = new Dictionary<int, (int, int)>();
 
             _recieveQueue = new Queue<KeyValuePair<int, byte[]>>();
             _sendQueue = new Queue<KeyValuePair<int, byte[]>>();
@@ -89,6 +92,11 @@ namespace GameServer
                 Nickname = nickname
             };
             Console.WriteLine("[TCPServer] 유저 캐시 로드 - {0}", username);
+        }
+
+        public void AddItemPriceToCache(int itemId, int itemType, int price)
+        {
+            _itemPriceCache[itemId] = (itemType, price);
         }
 
         void CreateServer()
@@ -220,6 +228,14 @@ namespace GameServer
                         Handle_Login(socketId, packet);
                         break;
 
+                    case ServerClientProtocol.ReceiveProtocol.BuyItem:
+                        Handle_BuyItem(socketId, packet);
+                        break;
+
+                    case ServerClientProtocol.ReceiveProtocol.SellItem:
+                        Handle_SellItem(socketId, packet);
+                        break;
+
                     default:
                         Console.WriteLine("[TCPServer] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -304,6 +320,64 @@ namespace GameServer
         }
 
         // ─────────────────────────────────────────────
+        // 상점 - 구매/판매
+        // 골드 검증은 서버 메모리(Client.Gold + _itemPriceCache)에서 즉시 처리, DB는 반영만 요청
+        // ─────────────────────────────────────────────
+
+        void Handle_BuyItem(int socketId, Packet packet)
+        {
+            Shop_Buy_Request req =
+                (Shop_Buy_Request)ConvertPacket.UnpackData(packet, typeof(Shop_Buy_Request));
+
+            if (!_clientList.ContainsKey(socketId))
+                return;
+            Client client = _clientList[socketId];
+
+            if (!_itemPriceCache.TryGetValue(req._itemId, out var itemInfo))
+            {
+                SendTradeResult(socketId, ServerClientProtocol.SendProtocol.BuyResult, false, req._itemId, client.Gold);
+                Console.WriteLine("[TCPServer] 구매 실패 - 존재하지 않는 아이템 : {0}", req._itemId);
+                return;
+            }
+
+            if (client.Gold < itemInfo.price)
+            {
+                SendTradeResult(socketId, ServerClientProtocol.SendProtocol.BuyResult, false, req._itemId, client.Gold);
+                Console.WriteLine("[TCPServer] 구매 실패 - 골드 부족 : {0}", client.Nickname);
+                return;
+            }
+
+            // 서버 메모리에서 먼저 확정 (낙관적 갱신) - DB 실패 시 OnBuyItemResult에서 롤백
+            client.Gold -= itemInfo.price;
+
+            _dbClient.RequestBuyItem(socketId, client.UserId, itemInfo.itemType, req._itemId, client.Gold);
+        }
+
+        void Handle_SellItem(int socketId, Packet packet)
+        {
+            Shop_Sell_Request req =
+                (Shop_Sell_Request)ConvertPacket.UnpackData(packet, typeof(Shop_Sell_Request));
+
+            if (!_clientList.ContainsKey(socketId))
+                return;
+            Client client = _clientList[socketId];
+
+            if (!_itemPriceCache.TryGetValue(req._itemId, out var itemInfo))
+            {
+                SendTradeResult(socketId, ServerClientProtocol.SendProtocol.SellResult, false, req._itemId, client.Gold);
+                Console.WriteLine("[TCPServer] 판매 실패 - 존재하지 않는 아이템 : {0}", req._itemId);
+                return;
+            }
+
+            int refund = itemInfo.price / 2;   // 판매가 = 구매가의 50%
+
+            // 실제 보유 여부는 DB가 트랜잭션 안에서 확인함 (인벤토리는 실시간 값이 진실이라 여기선 검증 안 함)
+            client.Gold += refund;
+
+            _dbClient.RequestSellItem(socketId, client.UserId, req._itemId, client.Gold);
+        }
+
+        // ─────────────────────────────────────────────
         // Guest / Client 관리
         // ─────────────────────────────────────────────
 
@@ -371,6 +445,8 @@ namespace GameServer
             if (!_clientList.ContainsKey(socketId)) return;
             Client client = _clientList[socketId];
 
+            client.Gold = info._gold;   // 이후 구매/판매 검증에 쓸 서버 메모리 캐시
+
             Login_Result result = new Login_Result
             {
                 _result = 1,
@@ -411,6 +487,54 @@ namespace GameServer
                 _quantity = quantity
             };
             Packet packet = ConvertPacket.MakePacket((int)ServerClientProtocol.SendProtocol.InventoryItem, itemData);
+            SendTo(socketId, ConvertPacket.ToBytes(packet));
+        }
+
+        /// <summary>DBClient가 구매 반영 결과를 받으면 호출. DB 실패 시 서버 메모리에 낙관적으로 반영해둔 골드를 되돌림</summary>
+        public void OnBuyItemResult(int socketId, bool success, int itemId)
+        {
+            if (!_clientList.ContainsKey(socketId)) return;
+            Client client = _clientList[socketId];
+
+            if (!success)
+            {
+                // DB 저장은 실패했는데 골드는 이미 깎아둔 상태이므로, 가격만큼 되돌림
+                if (_itemPriceCache.TryGetValue(itemId, out var itemInfo))
+                    client.Gold += itemInfo.price;
+
+                Console.WriteLine("[TCPServer] 구매 DB 반영 실패 - 골드 롤백 : {0}", client.Nickname);
+            }
+
+            SendTradeResult(socketId, ServerClientProtocol.SendProtocol.BuyResult, success, itemId, client.Gold);
+        }
+
+        /// <summary>DBClient가 판매 반영 결과를 받으면 호출. DB가 보유 수량 부족 등으로 실패시키면 골드도 되돌림</summary>
+        public void OnSellItemResult(int socketId, bool success, int itemId)
+        {
+            if (!_clientList.ContainsKey(socketId)) return;
+            Client client = _clientList[socketId];
+
+            if (!success)
+            {
+                // 실제로 갖고 있지 않아서 DB가 거부한 경우 - 미리 더해둔 환불 골드를 되돌림
+                if (_itemPriceCache.TryGetValue(itemId, out var itemInfo))
+                    client.Gold -= itemInfo.price / 2;
+
+                Console.WriteLine("[TCPServer] 판매 실패(미보유 등) - 골드 롤백 : {0}", client.Nickname);
+            }
+
+            SendTradeResult(socketId, ServerClientProtocol.SendProtocol.SellResult, success, itemId, client.Gold);
+        }
+
+        void SendTradeResult(int socketId, ServerClientProtocol.SendProtocol protocol, bool success, int itemId, int currentGold)
+        {
+            Shop_Trade_Result result = new Shop_Trade_Result
+            {
+                _result = success ? 1 : 0,
+                _itemId = itemId,
+                _newGold = currentGold
+            };
+            Packet packet = ConvertPacket.MakePacket((int)protocol, result);
             SendTo(socketId, ConvertPacket.ToBytes(packet));
         }
 

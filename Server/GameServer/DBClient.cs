@@ -29,6 +29,8 @@ namespace GameServer
         Queue<(int socketId, string username, string passwordHash, string nickname)> _pendingRegister;
         Queue<int> _pendingGetPlayerData;
         Queue<int> _pendingGetInventory;
+        Queue<(int socketId, int itemId)> _pendingBuyItem;
+        Queue<(int socketId, int itemId)> _pendingSellItem;
 
         // 인벤토리는 개수+항목 여러 개가 순서대로 오므로, "지금 누구 걸 받는 중인지" 별도로 기억
         int _currentInventorySocketId = -1;
@@ -45,6 +47,8 @@ namespace GameServer
             _pendingRegister = new Queue<(int, string, string, string)>();
             _pendingGetPlayerData = new Queue<int>();
             _pendingGetInventory = new Queue<int>();
+            _pendingBuyItem = new Queue<(int, int)>();
+            _pendingSellItem = new Queue<(int, int)>();
         }
 
         public void SetTCPServer(TCPServer server)
@@ -170,6 +174,22 @@ namespace GameServer
                         Handle_InventoryItem(packet);
                         break;
 
+                    case ServerDBProtocol.ReceiveProtocol.ItemPriceCount:
+                        Handle_ItemPriceCount(packet);
+                        break;
+
+                    case ServerDBProtocol.ReceiveProtocol.ItemPrice:
+                        Handle_ItemPrice(packet);
+                        break;
+
+                    case ServerDBProtocol.ReceiveProtocol.BuyItemResult:
+                        Handle_BuyItemResult(packet);
+                        break;
+
+                    case ServerDBProtocol.ReceiveProtocol.SellItemResult:
+                        Handle_SellItemResult(packet);
+                        break;
+
                     default:
                         Console.WriteLine("[DBClient] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -239,6 +259,43 @@ namespace GameServer
             _tcpServer?.OnInventoryItemResult(_currentInventorySocketId, item._itemType, item._itemId, item._quantity);
         }
 
+        void Handle_ItemPriceCount(Packet packet)
+        {
+            DB_ItemPriceCount count =
+                (DB_ItemPriceCount)ConvertPacket.UnpackData(packet, typeof(DB_ItemPriceCount));
+            Console.WriteLine("[DBClient] 아이템 가격 수 수신 - {0}개", count._count);
+        }
+
+        void Handle_ItemPrice(Packet packet)
+        {
+            DB_ItemPrice price =
+                (DB_ItemPrice)ConvertPacket.UnpackData(packet, typeof(DB_ItemPrice));
+
+            _tcpServer?.AddItemPriceToCache(price._itemId, price._itemType, price._price);
+        }
+
+        void Handle_BuyItemResult(Packet packet)
+        {
+            DB_BuyItem_Result result =
+                (DB_BuyItem_Result)ConvertPacket.UnpackData(packet, typeof(DB_BuyItem_Result));
+
+            if (_pendingBuyItem.Count == 0) return;
+            var pending = _pendingBuyItem.Dequeue();
+
+            _tcpServer?.OnBuyItemResult(pending.socketId, result._result == 1, pending.itemId);
+        }
+
+        void Handle_SellItemResult(Packet packet)
+        {
+            DB_SellItem_Result result =
+                (DB_SellItem_Result)ConvertPacket.UnpackData(packet, typeof(DB_SellItem_Result));
+
+            if (_pendingSellItem.Count == 0) return;
+            var pending = _pendingSellItem.Dequeue();
+
+            _tcpServer?.OnSellItemResult(pending.socketId, result._result == 1, pending.itemId);
+        }
+
         // ─────────────────────────────────────────────
         // 요청 함수
         // ─────────────────────────────────────────────
@@ -283,6 +340,46 @@ namespace GameServer
 
             DB_GetPlayerInventory_Request req = new DB_GetPlayerInventory_Request { _userId = userId };
             Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.GetPlayerInventory, req);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+        }
+
+        /// <summary>서버 시작 시 1회 호출 - 전체 아이템 가격을 캐싱하기 위해 요청</summary>
+        public void RequestGetAllItemPrices()
+        {
+            Packet packet = new Packet();
+            packet._protocol = (int)ServerDBProtocol.SendProtocol.GetAllItemPrices;
+            packet._totalSize = 0;
+            packet._data = new byte[1016];
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+            Console.WriteLine("[DBClient] 아이템 가격 목록 요청.");
+        }
+
+        public void RequestBuyItem(int socketId, int userId, int itemType, int itemId, int newGold)
+        {
+            _pendingBuyItem.Enqueue((socketId, itemId));
+
+            DB_BuyItem_Request req = new DB_BuyItem_Request
+            {
+                _userId = userId,
+                _itemType = itemType,
+                _itemId = itemId,
+                _newGold = newGold
+            };
+            Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.BuyItem, req);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+        }
+
+        public void RequestSellItem(int socketId, int userId, int itemId, int newGold)
+        {
+            _pendingSellItem.Enqueue((socketId, itemId));
+
+            DB_SellItem_Request req = new DB_SellItem_Request
+            {
+                _userId = userId,
+                _itemId = itemId,
+                _newGold = newGold
+            };
+            Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.SellItem, req);
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
         }
 

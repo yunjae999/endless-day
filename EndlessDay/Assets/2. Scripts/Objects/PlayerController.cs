@@ -376,4 +376,11 @@ public class PlayerController : MonoBehaviour, IDamageable
         // TODO: 게임 오버 처리 / 마을 복귀 등 (기획서 "반복되는 하루" 흐름과 연결 예정)
         Debug.Log("플레이어 사망 처리 필요 (TODO)");
     }
+
+    // 임시
+    public UIShopController _uishop;
+    public void OnInteraction()
+    {
+        _uishop.ToggleShopPanel();
+    }
 }

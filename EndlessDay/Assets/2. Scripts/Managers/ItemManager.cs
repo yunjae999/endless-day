@@ -28,6 +28,7 @@ public class ItemManager : TSingleton<ItemManager>
                 ItemName = table.ToS(itemID, "EquipmentName"),
                 Description = table.ToS(itemID, "Description"),
                 IconPath = table.ToS(itemID, "IconPath"),
+                Price = table.ToI(itemID, "Price"),
                 EquipmentType = (EquipmentType)table.ToI(itemID, "EquipmentType"),
                 StatType = (StatType)table.ToI(itemID, "StatType"),
                 CalcType = (CalcType)table.ToI(itemID, "CalcType"),
@@ -49,6 +50,7 @@ public class ItemManager : TSingleton<ItemManager>
                 ItemName = table.ToS(itemID, "ItemName"),
                 Description = table.ToS(itemID, "Description"),
                 IconPath = table.ToS(itemID, "IconPath"),
+                Price = table.ToI(itemID, "Price"),
                 EffectType = (EffectType)table.ToI(itemID, "EffectType"),
                 EffectValue = table.ToI(itemID, "EffectValue"),
             };
@@ -59,6 +61,12 @@ public class ItemManager : TSingleton<ItemManager>
     public ItemData Get(int itemID)
     {
         return _items.ContainsKey(itemID) ? _items[itemID] : null;
+    }
+
+    /// <summary>상점 목록 등에서 전체 아이템을 나열할 때 사용</summary>
+    public IEnumerable<ItemData> GetAll()
+    {
+        return _items.Values;
     }
 
     /// <summary>테이블 로드 없이 아이템을 직접 등록. 테스트/디버그용.</summary>

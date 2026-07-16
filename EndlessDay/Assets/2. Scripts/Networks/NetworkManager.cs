@@ -55,6 +55,9 @@ public class NetworkManager : MonoBehaviour
 
     public event Action<List<InventoryItemData>> OnInventoryLoaded;
 
+    public event Action<bool, int, int> OnBuyResult;   // success, itemId, newGold
+    public event Action<bool, int, int> OnSellResult;  // success, itemId, newGold
+
     void Awake()
     {
         if (_instance == null)
@@ -233,6 +236,14 @@ public class NetworkManager : MonoBehaviour
                 Handle_InventoryItem(packet);
                 break;
 
+            case ReceiveProtocol.BuyResult:
+                Handle_BuyResult(packet);
+                break;
+
+            case ReceiveProtocol.SellResult:
+                Handle_SellResult(packet);
+                break;
+
             default:
                 Debug.LogWarning("[Network] 알 수 없는 프로토콜 : " + packet._protocol);
                 break;
@@ -318,6 +329,20 @@ public class NetworkManager : MonoBehaviour
         }
     }
 
+    void Handle_BuyResult(Packet packet)
+    {
+        Shop_Trade_Result result = (Shop_Trade_Result)ConvertPacket.UnpackData(packet, typeof(Shop_Trade_Result));
+        Debug.Log("[Network] 구매 결과 - " + (result._result == 1 ? "성공" : "실패") + ", 골드 : " + result._newGold);
+        OnBuyResult?.Invoke(result._result == 1, result._itemId, result._newGold);
+    }
+
+    void Handle_SellResult(Packet packet)
+    {
+        Shop_Trade_Result result = (Shop_Trade_Result)ConvertPacket.UnpackData(packet, typeof(Shop_Trade_Result));
+        Debug.Log("[Network] 판매 결과 - " + (result._result == 1 ? "성공" : "실패") + ", 골드 : " + result._newGold);
+        OnSellResult?.Invoke(result._result == 1, result._itemId, result._newGold);
+    }
+
     // ─────────────────────────────────────────────
     // 송신 함수
     // ─────────────────────────────────────────────
@@ -351,6 +376,22 @@ public class NetworkManager : MonoBehaviour
             _password = password
         };
         Packet packet = ConvertPacket.MakePacket((int)SendProtocol.Login, req);
+        lock (_sendQueue)
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+    }
+
+    public void SendBuyItem(int itemId)
+    {
+        Shop_Buy_Request req = new Shop_Buy_Request { _itemId = itemId };
+        Packet packet = ConvertPacket.MakePacket((int)SendProtocol.BuyItem, req);
+        lock (_sendQueue)
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+    }
+
+    public void SendSellItem(int itemId)
+    {
+        Shop_Sell_Request req = new Shop_Sell_Request { _itemId = itemId };
+        Packet packet = ConvertPacket.MakePacket((int)SendProtocol.SellItem, req);
         lock (_sendQueue)
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
     }
