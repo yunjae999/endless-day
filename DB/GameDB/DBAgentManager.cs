@@ -171,6 +171,39 @@ namespace GameDB
                 return null;
             }
         }
+
+        // ─────────────────────────────────────────────
+        // 로그인 성공 시 보유 인벤토리 로드
+        // ─────────────────────────────────────────────
+
+        public List<InventoryItemRow> GetPlayerInventory(int userId)
+        {
+            List<InventoryItemRow> result = new List<InventoryItemRow>();
+            string query = string.Format(
+                "SELECT ItemType, ItemID, Quantity FROM {0}.PlayerInventory WHERE UserID = @userId", _dbName);
+            try
+            {
+                MySqlCommand cmd = new MySqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("@userId", userId);
+                MySqlDataReader reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    result.Add(new InventoryItemRow
+                    {
+                        ItemType = reader.GetInt32("ItemType"),
+                        ItemID = reader.GetInt32("ItemID"),
+                        Quantity = reader.GetInt32("Quantity")
+                    });
+                }
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[DB] GetPlayerInventory 실패 : {0}", ex.Message);
+            }
+            return result;
+        }
     }
 
     // ─────────────────────────────────────────────
@@ -192,5 +225,12 @@ namespace GameDB
         public int IsCleared { get; set; }
         public string UnlockedWeapons { get; set; }
         public string EquippedEquipment { get; set; }
+    }
+
+    class InventoryItemRow
+    {
+        public int ItemType { get; set; }
+        public int ItemID { get; set; }
+        public int Quantity { get; set; }
     }
 }

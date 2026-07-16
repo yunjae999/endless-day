@@ -1,5 +1,7 @@
-using UnityEngine;
 using ErrorCode;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 타이틀/로그인 UI와 NetworkManager를 연결하는 컨트롤러.
@@ -31,6 +33,7 @@ public class AuthController : MonoBehaviour
         NetworkManager._instance.OnRegisterFail += OnRegisterFail;
         NetworkManager._instance.OnLoginOK += OnLoginOK;
         NetworkManager._instance.OnLoginFail += OnLoginFail;
+        NetworkManager._instance.OnInventoryLoaded += OnInventoryLoaded;
     }
 
     // ─────────────────────────────────────────────
@@ -137,8 +140,13 @@ public class AuthController : MonoBehaviour
     {
         GameSession._instance.LoadFromLoginResult(data);
 
-        // TODO : VillageScene 전환 (씬 준비되면 여기서 처리)
-        _popup.Show("로그인에 성공했습니다. (" + data.Nickname + ")", UIPopup.PopupType.Success);
+        SceneManager.LoadScene("VillageScene");
+    }
+
+    void OnInventoryLoaded(List<InventoryItemData> items)
+    {
+        foreach (InventoryItemData item in items)
+            GameSession._instance.Inventory.AddItem(item.ItemId, item.Quantity);
     }
 
     void OnLoginFail(int reasonCode)

@@ -4,11 +4,13 @@ using UnityEngine;
 
 /// <summary>
 /// 로그인 데이터와 인벤토리 등, 씬을 넘어서도 유지해야 하는 세션 상태.
-/// 마을/던전씬마다 새로 생성되는 PlayerController 등이 Awake 시점에 여기서 값을 읽어간다.
+/// 인벤토리 UI는 씬(Village/Dungeon)마다 새로 생성되는 프리팹이 스스로 등록/해제하며,
+/// GameSession은 "지금 열려있는지" 상태만 갖고 등록된 컨트롤러에게 보이기/숨기기를 위임한다.
 /// </summary>
-public class GameSession : MonoBehaviour
+public class GameSession : TSingleton<GameSession>
 {
-    public static GameSession _instance { get; private set; }
+    bool _isInventoryOpen;
+    UIInventoryController _inventoryUI;
 
     public int UserId { get; private set; }
     public string Nickname { get; private set; }
@@ -19,18 +21,33 @@ public class GameSession : MonoBehaviour
 
     public InventoryModel Inventory { get; private set; } = new InventoryModel();
 
-    void Awake()
+    // ─────────────────────────────────────────────
+    // 인벤토리 UI 등록 (씬마다 새로 생기는 프리팹이 자기 자신을 등록)
+    // ─────────────────────────────────────────────
+
+    public void RegisterInventoryUI(UIInventoryController controller)
     {
-        if (_instance == null)
-        {
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        _inventoryUI = controller;
+        _inventoryUI.SetVisible(_isInventoryOpen);   // 씬 전환 중에도 열려있던 상태면 그대로 유지
     }
+
+    public void UnregisterInventoryUI(UIInventoryController controller)
+    {
+        if (_inventoryUI == controller)
+            _inventoryUI = null;
+    }
+
+    public void ToggleInventory()
+    {
+        _isInventoryOpen = !_isInventoryOpen;
+
+        if (_inventoryUI != null)
+            _inventoryUI.SetVisible(_isInventoryOpen);
+    }
+
+    // ─────────────────────────────────────────────
+    // 로그인 데이터
+    // ─────────────────────────────────────────────
 
     /// <summary>로그인 성공(LoginOK) 시점에 NetworkManager의 결과로 세션을 채운다</summary>
     public void LoadFromLoginResult(LoginResultData data)

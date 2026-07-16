@@ -161,6 +161,45 @@ namespace DefinePacket
         public string _equippedEquipment;
     }
 
+    /// <summary>서버 → DB : 보유 인벤토리 조회 요청</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_GetPlayerInventory_Request
+    {
+        public int _userId;
+    }
+
+    /// <summary>DB → 서버 : 인벤토리 아이템 개수 (먼저 전송)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_InventoryCount
+    {
+        public int _count;
+    }
+
+    /// <summary>DB → 서버 : 인벤토리 아이템 1개 (개수만큼 반복 전송)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_InventoryItem
+    {
+        public int _itemType;   // 1=장비, 2=소비
+        public int _itemId;
+        public int _quantity;
+    }
+
+    /// <summary>서버 → 클라 : 인벤토리 아이템 개수 (먼저 전송)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Inventory_Count
+    {
+        public int _count;
+    }
+
+    /// <summary>서버 → 클라 : 인벤토리 아이템 1개 (개수만큼 반복 전송)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Inventory_Item
+    {
+        public int _itemType;
+        public int _itemId;
+        public int _quantity;
+    }
+
     // ─────────────────────────────────────────────
     // 변환 유틸
     // ─────────────────────────────────────────────

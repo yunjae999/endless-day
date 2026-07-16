@@ -19,11 +19,14 @@
         RegisterFail = 5,
         LoginOK = 6,
         LoginFail = 7,
+        InventoryCount = 8,
+        InventoryItem = 9,
     }
 }
 
 namespace ClientServerProtocol
 {
+    // 클라 기준 (Unity 쪽에서 그대로 대칭으로 사용)
     public enum SendProtocol      // 클라 → 서버
     {
         none = 0,
@@ -42,5 +45,7 @@ namespace ClientServerProtocol
         RegisterFail = 5,
         LoginOK = 6,
         LoginFail = 7,
+        InventoryCount = 8,
+        InventoryItem = 9,
     }
 }

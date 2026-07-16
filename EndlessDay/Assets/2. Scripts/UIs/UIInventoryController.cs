@@ -17,12 +17,29 @@ public class UIInventoryController : MonoBehaviour
 
     InventoryModel _model;   // GameSession 등에서 가져올 실제 데이터
 
-    void Start()
+    void Awake()
     {
-        _model = GameSession._instance.Inventory;   // 프로젝트의 세션 관리 방식에 맞춰 참조 (아래 설명 참고)
+        _model = GameSession._instance.Inventory;
 
         CreateSlots();
         RefreshAll();
+
+        GameSession._instance.RegisterInventoryUI(this);
+    }
+
+    void OnDestroy()
+    {
+        if (GameSession._instance != null)
+            GameSession._instance.UnregisterInventoryUI(this);
+    }
+
+    /// <summary>GameSession이 열기/닫기 요청 시 호출. 보일 때는 최신 상태로 새로고침도 같이 함</summary>
+    public void SetVisible(bool visible)
+    {
+        gameObject.SetActive(visible);
+
+        if (visible)
+            RefreshAll();
     }
 
     void CreateSlots()

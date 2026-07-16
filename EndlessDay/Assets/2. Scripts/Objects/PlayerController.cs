@@ -137,6 +137,14 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         TryStartSkill();
     }
+    public void OnInventory(InputValue value)
+    {
+        if (!value.isPressed)
+            return;
+        if (IsDead)
+            return;
+        GameSession._instance.ToggleInventory();
+    }
     void SetRun(bool isRun)
     {
         if (_isRun == isRun)

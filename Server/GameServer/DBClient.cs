@@ -28,6 +28,10 @@ namespace GameServer
         // 회원가입/PlayerData 요청은 소켓당 한 번에 하나씩 진행된다고 가정하고 socketId로 매칭
         Queue<(int socketId, string username, string passwordHash, string nickname)> _pendingRegister;
         Queue<int> _pendingGetPlayerData;
+        Queue<int> _pendingGetInventory;
+
+        // 인벤토리는 개수+항목 여러 개가 순서대로 오므로, "지금 누구 걸 받는 중인지" 별도로 기억
+        int _currentInventorySocketId = -1;
 
         public DBClient(string ip, short port)
         {
@@ -40,6 +44,7 @@ namespace GameServer
 
             _pendingRegister = new Queue<(int, string, string, string)>();
             _pendingGetPlayerData = new Queue<int>();
+            _pendingGetInventory = new Queue<int>();
         }
 
         public void SetTCPServer(TCPServer server)
@@ -157,6 +162,14 @@ namespace GameServer
                         Handle_PlayerDataResult(packet);
                         break;
 
+                    case ServerDBProtocol.ReceiveProtocol.InventoryCount:
+                        Handle_InventoryCount(packet);
+                        break;
+
+                    case ServerDBProtocol.ReceiveProtocol.InventoryItem:
+                        Handle_InventoryItem(packet);
+                        break;
+
                     default:
                         Console.WriteLine("[DBClient] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -207,6 +220,25 @@ namespace GameServer
             _tcpServer?.OnPlayerDataResult(socketId, info);
         }
 
+        void Handle_InventoryCount(Packet packet)
+        {
+            DB_InventoryCount count =
+                (DB_InventoryCount)ConvertPacket.UnpackData(packet, typeof(DB_InventoryCount));
+
+            if (_pendingGetInventory.Count == 0) return;
+            _currentInventorySocketId = _pendingGetInventory.Dequeue();
+
+            _tcpServer?.OnInventoryCountResult(_currentInventorySocketId, count._count);
+        }
+
+        void Handle_InventoryItem(Packet packet)
+        {
+            DB_InventoryItem item =
+                (DB_InventoryItem)ConvertPacket.UnpackData(packet, typeof(DB_InventoryItem));
+
+            _tcpServer?.OnInventoryItemResult(_currentInventorySocketId, item._itemType, item._itemId, item._quantity);
+        }
+
         // ─────────────────────────────────────────────
         // 요청 함수
         // ─────────────────────────────────────────────
@@ -242,6 +274,15 @@ namespace GameServer
 
             DB_GetPlayerData_Request req = new DB_GetPlayerData_Request { _userId = userId };
             Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.GetPlayerData, req);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+        }
+
+        public void RequestGetPlayerInventory(int socketId, int userId)
+        {
+            _pendingGetInventory.Enqueue(socketId);
+
+            DB_GetPlayerInventory_Request req = new DB_GetPlayerInventory_Request { _userId = userId };
+            Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.GetPlayerInventory, req);
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
         }
 

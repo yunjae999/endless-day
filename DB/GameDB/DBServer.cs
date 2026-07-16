@@ -149,6 +149,10 @@ namespace GameDB
                         Handle_GetPlayerData(packet);
                         break;
 
+                    case ReceiveProtocol.GetPlayerInventory:
+                        Handle_GetPlayerInventory(packet);
+                        break;
+
                     default:
                         Console.WriteLine("[DBServer] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -221,6 +225,32 @@ namespace GameDB
             _sendQueue.Enqueue(ConvertPacket.ToBytes(resultPacket));
 
             Console.WriteLine("[DBServer] PlayerData 전송 - UserID : {0}", req._userId);
+        }
+
+        void Handle_GetPlayerInventory(Packet packet)
+        {
+            DB_GetPlayerInventory_Request req =
+                (DB_GetPlayerInventory_Request)ConvertPacket.UnpackData(packet, typeof(DB_GetPlayerInventory_Request));
+
+            List<InventoryItemRow> items = _db.GetPlayerInventory(req._userId);
+
+            DB_InventoryCount countData = new DB_InventoryCount { _count = items.Count };
+            Packet countPacket = ConvertPacket.MakePacket((int)SendProtocol.InventoryCount, countData);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(countPacket));
+
+            foreach (InventoryItemRow item in items)
+            {
+                DB_InventoryItem itemData = new DB_InventoryItem
+                {
+                    _itemType = item.ItemType,
+                    _itemId = item.ItemID,
+                    _quantity = item.Quantity
+                };
+                Packet itemPacket = ConvertPacket.MakePacket((int)SendProtocol.InventoryItem, itemData);
+                _sendQueue.Enqueue(ConvertPacket.ToBytes(itemPacket));
+            }
+
+            Console.WriteLine("[DBServer] 인벤토리 전송 완료 - UserID : {0}, 개수 : {1}", req._userId, items.Count);
         }
 
         public void Release()

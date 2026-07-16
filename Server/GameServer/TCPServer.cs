@@ -386,6 +386,32 @@ namespace GameServer
             Packet packet = ConvertPacket.MakePacket((int)ServerClientProtocol.SendProtocol.LoginOK, result);
             SendTo(socketId, ConvertPacket.ToBytes(packet));
             Console.WriteLine("[TCPServer] 로그인 성공 - UserID : {0}", result._userId);
+
+            // 로그인 응답 보낸 직후, 보유 인벤토리도 이어서 요청 (받는 대로 클라에 그대로 전달)
+            _dbClient.RequestGetPlayerInventory(socketId, client.UserId);
+        }
+
+        /// <summary>DBClient가 인벤토리 개수를 받으면 호출 - 클라에도 그대로 전달</summary>
+        public void OnInventoryCountResult(int socketId, int count)
+        {
+            Inventory_Count countData = new Inventory_Count { _count = count };
+            Packet packet = ConvertPacket.MakePacket((int)ServerClientProtocol.SendProtocol.InventoryCount, countData);
+            SendTo(socketId, ConvertPacket.ToBytes(packet));
+
+            Console.WriteLine("[TCPServer] 인벤토리 개수 전달 - 소켓 : {0}, 개수 : {1}", socketId, count);
+        }
+
+        /// <summary>DBClient가 인벤토리 항목 하나를 받으면 호출 - 클라에도 그대로 전달</summary>
+        public void OnInventoryItemResult(int socketId, int itemType, int itemId, int quantity)
+        {
+            Inventory_Item itemData = new Inventory_Item
+            {
+                _itemType = itemType,
+                _itemId = itemId,
+                _quantity = quantity
+            };
+            Packet packet = ConvertPacket.MakePacket((int)ServerClientProtocol.SendProtocol.InventoryItem, itemData);
+            SendTo(socketId, ConvertPacket.ToBytes(packet));
         }
 
         // ─────────────────────────────────────────────

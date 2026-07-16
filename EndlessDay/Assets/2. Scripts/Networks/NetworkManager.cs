@@ -33,6 +33,10 @@ public class NetworkManager : MonoBehaviour
 
     public static NetworkManager _instance { get; private set; }
 
+    // 인벤토리는 개수 먼저 온 뒤 항목이 여러 번 나눠 오므로, 다 받을 때까지 누적
+    List<InventoryItemData> _pendingInventoryItems = new List<InventoryItemData>();
+    int _expectedInventoryCount = 0;
+
     // ─────────────────────────────────────────────
     // 이벤트 (AuthController 등이 구독)
     // ─────────────────────────────────────────────
@@ -48,6 +52,8 @@ public class NetworkManager : MonoBehaviour
 
     public event Action<LoginResultData> OnLoginOK;
     public event Action<int> OnLoginFail;      // int : ErrorCode.LoginFailReason
+
+    public event Action<List<InventoryItemData>> OnInventoryLoaded;
 
     void Awake()
     {
@@ -219,6 +225,14 @@ public class NetworkManager : MonoBehaviour
                 Handle_LoginFail(packet);
                 break;
 
+            case ReceiveProtocol.InventoryCount:
+                Handle_InventoryCount(packet);
+                break;
+
+            case ReceiveProtocol.InventoryItem:
+                Handle_InventoryItem(packet);
+                break;
+
             default:
                 Debug.LogWarning("[Network] 알 수 없는 프로토콜 : " + packet._protocol);
                 break;
@@ -256,6 +270,10 @@ public class NetworkManager : MonoBehaviour
         IsLoggedIn = true;
         Debug.Log("[Network] 로그인 성공 - 닉네임 : " + result._nickname);
 
+        // 로그인 직후 서버가 이어서 인벤토리를 보내므로, 받을 준비를 미리 비워둠
+        _pendingInventoryItems.Clear();
+        _expectedInventoryCount = 0;
+
         LoginResultData data = new LoginResultData
         {
             UserId = result._userId,
@@ -267,6 +285,37 @@ public class NetworkManager : MonoBehaviour
             EquippedEquipment = result._equippedEquipment
         };
         OnLoginOK?.Invoke(data);
+    }
+
+    void Handle_InventoryCount(Packet packet)
+    {
+        Inventory_Count count = (Inventory_Count)ConvertPacket.UnpackData(packet, typeof(Inventory_Count));
+
+        _pendingInventoryItems.Clear();
+        _expectedInventoryCount = count._count;
+        Debug.Log("[Network] 인벤토리 개수 수신 - " + _expectedInventoryCount);
+
+        // 아이템이 하나도 없으면 항목 패킷 자체가 안 오니, 여기서 바로 완료 처리
+        if (_expectedInventoryCount == 0)
+            OnInventoryLoaded?.Invoke(_pendingInventoryItems);
+    }
+
+    void Handle_InventoryItem(Packet packet)
+    {
+        Inventory_Item item = (Inventory_Item)ConvertPacket.UnpackData(packet, typeof(Inventory_Item));
+
+        _pendingInventoryItems.Add(new InventoryItemData
+        {
+            ItemType = item._itemType,
+            ItemId = item._itemId,
+            Quantity = item._quantity
+        });
+
+        if (_pendingInventoryItems.Count >= _expectedInventoryCount)
+        {
+            Debug.Log("[Network] 인벤토리 수신 완료 - " + _pendingInventoryItems.Count + "개");
+            OnInventoryLoaded?.Invoke(_pendingInventoryItems);
+        }
     }
 
     // ─────────────────────────────────────────────
@@ -337,4 +386,12 @@ public class LoginResultData
     public bool IsCleared;
     public string UnlockedWeapons;     // JSON 문자열, 사용하는 쪽에서 파싱
     public string EquippedEquipment;   // JSON 문자열, 사용하는 쪽에서 파싱
+}
+
+/// <summary>인벤토리 항목 하나 (서버가 로그인 직후 보내주는 보유 목록의 각 행)</summary>
+public class InventoryItemData
+{
+    public int ItemType;   // 1=장비, 2=소비
+    public int ItemId;
+    public int Quantity;
 }

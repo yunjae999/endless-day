@@ -19,6 +19,8 @@ namespace ServerClientProtocol
         RegisterFail = 5,
         LoginOK = 6,
         LoginFail = 7,
+        InventoryCount = 8,
+        InventoryItem = 9,
     }
 }
 
@@ -43,5 +45,7 @@ namespace ClientServerProtocol
         RegisterFail = 5,
         LoginOK = 6,
         LoginFail = 7,
+        InventoryCount = 8,
+        InventoryItem = 9,
     }
 }
