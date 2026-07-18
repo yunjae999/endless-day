@@ -200,21 +200,6 @@ namespace DefinePacket
         public int _quantity;
     }
 
-    /// <summary>서버 → DB : 서버 시작 시 전체 아이템 가격 캐싱용 요청 (payload 없음)</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DB_ItemPriceCount
-    {
-        public int _count;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DB_ItemPrice
-    {
-        public int _itemId;
-        public int _itemType;   // 1=장비, 2=소비 - 서버가 구매 시 PlayerInventory에 넣을 때 필요
-        public int _price;
-    }
-
     /// <summary>서버 → DB : 구매 반영 (골드는 서버가 이미 검증/계산 완료, DB는 저장만)</summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct DB_BuyItem_Request

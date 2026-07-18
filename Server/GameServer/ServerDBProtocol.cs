@@ -8,7 +8,6 @@
         Register = 2,               // 회원가입은 DB 쓰기가 필요하므로 그대로 유지
         GetPlayerData = 3,          // 로그인 성공 후 실시간 게임 데이터 조회
         GetPlayerInventory = 4,     // 로그인 성공 후 보유 인벤토리 조회
-        GetAllItemPrices = 5,       // 서버 시작 시 전체 아이템 가격 캐싱용 요청
         BuyItem = 6,
         SellItem = 7,
     }
@@ -22,8 +21,6 @@
         PlayerDataResult = 103,
         InventoryCount = 104,
         InventoryItem = 105,
-        ItemPriceCount = 106,
-        ItemPrice = 107,
         BuyItemResult = 108,
         SellItemResult = 109,
     }
@@ -41,8 +38,6 @@ namespace DBServerProtocol
         PlayerDataResult = 103,
         InventoryCount = 104,
         InventoryItem = 105,
-        ItemPriceCount = 106,
-        ItemPrice = 107,
         BuyItemResult = 108,
         SellItemResult = 109,
     }
@@ -54,7 +49,6 @@ namespace DBServerProtocol
         Register = 2,
         GetPlayerData = 3,
         GetPlayerInventory = 4,
-        GetAllItemPrices = 5,
         BuyItem = 6,
         SellItem = 7,
     }

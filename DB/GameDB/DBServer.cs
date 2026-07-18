@@ -153,10 +153,6 @@ namespace GameDB
                         Handle_GetPlayerInventory(packet);
                         break;
 
-                    case ReceiveProtocol.GetAllItemPrices:
-                        Handle_GetAllItemPrices();
-                        break;
-
                     case ReceiveProtocol.BuyItem:
                         Handle_BuyItem(packet);
                         break;
@@ -263,24 +259,6 @@ namespace GameDB
             }
 
             Console.WriteLine("[DBServer] 인벤토리 전송 완료 - UserID : {0}, 개수 : {1}", req._userId, items.Count);
-        }
-
-        void Handle_GetAllItemPrices()
-        {
-            List<ItemPriceRow> prices = _db.GetAllItemPrices();
-
-            DB_ItemPriceCount countData = new DB_ItemPriceCount { _count = prices.Count };
-            Packet countPacket = ConvertPacket.MakePacket((int)SendProtocol.ItemPriceCount, countData);
-            _sendQueue.Enqueue(ConvertPacket.ToBytes(countPacket));
-
-            foreach (ItemPriceRow price in prices)
-            {
-                DB_ItemPrice priceData = new DB_ItemPrice { _itemId = price.ItemID, _itemType = price.ItemType, _price = price.Price };
-                Packet pricePacket = ConvertPacket.MakePacket((int)SendProtocol.ItemPrice, priceData);
-                _sendQueue.Enqueue(ConvertPacket.ToBytes(pricePacket));
-            }
-
-            Console.WriteLine("[DBServer] 아이템 가격 전송 완료 - {0}개", prices.Count);
         }
 
         void Handle_BuyItem(Packet packet)

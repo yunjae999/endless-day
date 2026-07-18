@@ -174,14 +174,6 @@ namespace GameServer
                         Handle_InventoryItem(packet);
                         break;
 
-                    case ServerDBProtocol.ReceiveProtocol.ItemPriceCount:
-                        Handle_ItemPriceCount(packet);
-                        break;
-
-                    case ServerDBProtocol.ReceiveProtocol.ItemPrice:
-                        Handle_ItemPrice(packet);
-                        break;
-
                     case ServerDBProtocol.ReceiveProtocol.BuyItemResult:
                         Handle_BuyItemResult(packet);
                         break;
@@ -259,21 +251,6 @@ namespace GameServer
             _tcpServer?.OnInventoryItemResult(_currentInventorySocketId, item._itemType, item._itemId, item._quantity);
         }
 
-        void Handle_ItemPriceCount(Packet packet)
-        {
-            DB_ItemPriceCount count =
-                (DB_ItemPriceCount)ConvertPacket.UnpackData(packet, typeof(DB_ItemPriceCount));
-            Console.WriteLine("[DBClient] 아이템 가격 수 수신 - {0}개", count._count);
-        }
-
-        void Handle_ItemPrice(Packet packet)
-        {
-            DB_ItemPrice price =
-                (DB_ItemPrice)ConvertPacket.UnpackData(packet, typeof(DB_ItemPrice));
-
-            _tcpServer?.AddItemPriceToCache(price._itemId, price._itemType, price._price);
-        }
-
         void Handle_BuyItemResult(Packet packet)
         {
             DB_BuyItem_Result result =
@@ -341,17 +318,6 @@ namespace GameServer
             DB_GetPlayerInventory_Request req = new DB_GetPlayerInventory_Request { _userId = userId };
             Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.GetPlayerInventory, req);
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
-        }
-
-        /// <summary>서버 시작 시 1회 호출 - 전체 아이템 가격을 캐싱하기 위해 요청</summary>
-        public void RequestGetAllItemPrices()
-        {
-            Packet packet = new Packet();
-            packet._protocol = (int)ServerDBProtocol.SendProtocol.GetAllItemPrices;
-            packet._totalSize = 0;
-            packet._data = new byte[1016];
-            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
-            Console.WriteLine("[DBClient] 아이템 가격 목록 요청.");
         }
 
         public void RequestBuyItem(int socketId, int userId, int itemType, int itemId, int newGold)

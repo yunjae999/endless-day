@@ -206,36 +206,6 @@ namespace GameDB
         }
 
         // ─────────────────────────────────────────────
-        // 상점 - 가격 캐싱용 전체 조회 (서버 시작 시 1회)
-        // ─────────────────────────────────────────────
-
-        public List<ItemPriceRow> GetAllItemPrices()
-        {
-            List<ItemPriceRow> result = new List<ItemPriceRow>();
-            string query = string.Format("SELECT ItemID, ItemType, Price FROM {0}.ItemPrice", _dbName);
-            try
-            {
-                MySqlCommand cmd = new MySqlCommand(query, _connection);
-                MySqlDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    result.Add(new ItemPriceRow
-                    {
-                        ItemID = reader.GetInt32("ItemID"),
-                        ItemType = reader.GetInt32("ItemType"),
-                        Price = reader.GetInt32("Price")
-                    });
-                }
-                reader.Close();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[DB] GetAllItemPrices 실패 : {0}", ex.Message);
-            }
-            return result;
-        }
-
-        // ─────────────────────────────────────────────
         // 상점 - 구매/판매 (트랜잭션으로 골드/인벤토리 동시 반영)
         // ─────────────────────────────────────────────
 
@@ -362,12 +332,5 @@ namespace GameDB
         public int ItemType { get; set; }
         public int ItemID { get; set; }
         public int Quantity { get; set; }
-    }
-
-    class ItemPriceRow
-    {
-        public int ItemID { get; set; }
-        public int ItemType { get; set; }
-        public int Price { get; set; }
     }
 }
