@@ -162,7 +162,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     }
     void Move()
     {
-        float speed = _isRun ? _statManager.BaseRunSpeed : _statManager.BaseMoveSpeed;
+        float speed = _isRun ? _statManager.FinalRunSpeed : _statManager.FinalMoveSpeed;
         transform.position += _moveDir.normalized * speed * Time.deltaTime;
     }
     void Rotate()
@@ -287,8 +287,8 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (other.TryGetComponent<IDamageable>(out IDamageable target))
         {
-            // TODO: PlayerStatManager의 최종 공격력으로 교체
-            target.TakeDamage(20);
+            // 최종 공격력 그대로 적용 (기본공격 계수 100%)
+            target.TakeDamage(Mathf.RoundToInt(_statManager.FinalAttackPower));
         }
     }
 
@@ -328,8 +328,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             if (hit.TryGetComponent<IDamageable>(out IDamageable target))
             {
-                // TODO: PlayerStatManager의 최종 스킬 데미지로 교체 (기획서: 검 스킬 계수 220%)
-                target.TakeDamage(44);
+                // 검 스킬 계수 220%
+                target.TakeDamage(Mathf.RoundToInt(_statManager.FinalAttackPower * 2.2f));
             }
         }
     }
@@ -375,12 +375,5 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         // TODO: 게임 오버 처리 / 마을 복귀 등 (기획서 "반복되는 하루" 흐름과 연결 예정)
         Debug.Log("플레이어 사망 처리 필요 (TODO)");
-    }
-
-    // 임시
-    public UIShopController _uishop;
-    public void OnInteraction()
-    {
-        _uishop.ToggleShopPanel();
     }
 }

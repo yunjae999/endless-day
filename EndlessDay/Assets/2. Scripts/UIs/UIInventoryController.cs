@@ -65,6 +65,8 @@ public class UIInventoryController : MonoBehaviour
     {
         bool success = false;
 
+        bool isEquipRelated = false;
+
         if (from.SlotType == SlotType.Inventory && to.SlotType == SlotType.Inventory)
         {
             success = _model.MoveInventorySlot(from.SlotIndex, to.SlotIndex);
@@ -72,20 +74,26 @@ public class UIInventoryController : MonoBehaviour
         else if (from.SlotType == SlotType.Inventory && to.SlotType == SlotType.Equip)
         {
             success = _model.Equip(from.SlotIndex, to.SlotIndex);
+            isEquipRelated = true;
         }
         else if (from.SlotType == SlotType.Equip && to.SlotType == SlotType.Inventory)
         {
             success = _model.Unequip(from.SlotIndex, to.SlotIndex);
+            isEquipRelated = true;
         }
         else if (from.SlotType == SlotType.Equip && to.SlotType == SlotType.Equip)
         {
             success = _model.SwapEquipSlots(from.SlotIndex, to.SlotIndex);
+            isEquipRelated = true;
         }
 
         if (success)
         {
             RefreshSlot(from);
             RefreshSlot(to);
+
+            if (isEquipRelated)
+                GameSession._instance.PlayerStats?.Recalculate();
         }
     }
 

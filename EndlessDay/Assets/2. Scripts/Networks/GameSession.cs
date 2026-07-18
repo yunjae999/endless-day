@@ -22,6 +22,145 @@ public class GameSession : TSingleton<GameSession>
     public InventoryModel Inventory { get; private set; } = new InventoryModel();
 
     // ─────────────────────────────────────────────
+    // 레벨 / 경험치 (던전 재도전마다 리셋되는 값 - 로그라이트 특성)
+    // ─────────────────────────────────────────────
+
+    const int EXP_PER_LEVEL_MULTIPLIER = 50;   // 임시 공식: 필요경험치 = 현재레벨 × 50
+    const int PERK_CHOICE_COUNT = 3;
+    const int CURRENT_WEAPON_TYPE = 1;   // TODO: 무기 선택 시스템 완성되면 실제 장착 무기 값으로 교체 (지금은 검 고정)
+
+    public int CurrentLevel { get; private set; } = 1;
+    public int CurrentExp { get; private set; }
+
+    /// <summary>PerkID → 현재 스택 수. 던전 재도전마다 리셋되는 값</summary>
+    public Dictionary<int, int> ActivePerks { get; private set; } = new Dictionary<int, int>();
+
+    public void AddExp(int amount)
+    {
+        CurrentExp += amount;
+
+        int requiredExp = GetRequiredExp(CurrentLevel);
+        while (CurrentExp >= requiredExp)
+        {
+            CurrentExp -= requiredExp;
+            LevelUp();
+            requiredExp = GetRequiredExp(CurrentLevel);
+        }
+    }
+
+    int GetRequiredExp(int level)
+    {
+        return level * EXP_PER_LEVEL_MULTIPLIER;
+    }
+
+    void LevelUp()
+    {
+        CurrentLevel++;
+        Debug.Log("[GameSession] 레벨업! 현재 레벨 : " + CurrentLevel);
+
+        TriggerPerkSelection();
+    }
+
+    /// <summary>레벨업 시점에 호출. 강화 UI가 등록돼있으면 후보를 넘겨서 띄움</summary>
+    void TriggerPerkSelection()
+    {
+        List<PerkData> candidates = new List<PerkData>();
+        foreach (PerkData perk in PerkManager._instance.GetAll())
+        {
+            if (IsPerkEligible(perk))
+                candidates.Add(perk);
+        }
+
+        List<PerkData> picked = PickRandom(candidates, PERK_CHOICE_COUNT);
+
+        Debug.Log("[GameSession] 강화 선택지 " + picked.Count + "개:");
+        foreach (PerkData perk in picked)
+            Debug.Log(" - " + perk.PerkName);
+
+        if (_perkSelectionUI != null)
+            _perkSelectionUI.Show(picked);
+        else
+            Debug.LogWarning("[GameSession] 강화 선택 UI가 등록되어 있지 않음 (씬에 배치됐는지 확인)");
+    }
+
+    /// <summary>강화 선택 완료 시 호출(지금은 UI 대신 테스트 코드에서 직접 호출). 스택 +1 하고 스탯 재계산까지</summary>
+    public void ApplyPerkChoice(int perkId)
+    {
+        if (!ActivePerks.ContainsKey(perkId))
+            ActivePerks[perkId] = 0;
+        ActivePerks[perkId]++;
+
+        PerkData perk = PerkManager._instance.Get(perkId);
+        Debug.Log("[GameSession] 강화 적용 : " + (perk != null ? perk.PerkName : perkId.ToString())
+            + " (현재 " + ActivePerks[perkId] + "스택)");
+
+        PlayerStats?.Recalculate();
+    }
+
+    // ─────────────────────────────────────────────
+    // PlayerStatManager 등록 (씬마다 새로 생기는 Player 오브젝트가 자기 자신을 등록)
+    // ─────────────────────────────────────────────
+
+    public PlayerStatManager PlayerStats { get; private set; }
+
+    public void RegisterPlayerStats(PlayerStatManager statManager)
+    {
+        PlayerStats = statManager;
+    }
+
+    public void UnregisterPlayerStats(PlayerStatManager statManager)
+    {
+        if (PlayerStats == statManager)
+            PlayerStats = null;
+    }
+
+    // ─────────────────────────────────────────────
+    // 강화 선택 UI 등록 (씬마다 새로 생기는 HUD가 자기 자신을 등록)
+    // ─────────────────────────────────────────────
+
+    UIPerkSelectionController _perkSelectionUI;
+
+    public void RegisterPerkSelectionUI(UIPerkSelectionController controller)
+    {
+        _perkSelectionUI = controller;
+    }
+
+    public void UnregisterPerkSelectionUI(UIPerkSelectionController controller)
+    {
+        if (_perkSelectionUI == controller)
+            _perkSelectionUI = null;
+    }
+
+    /// <summary>무기 전용 강화는 현재 무기와 안 맞으면 제외, 이미 최대 스택이면 제외</summary>
+    bool IsPerkEligible(PerkData perk)
+    {
+        if (perk.WeaponType != 0 && perk.WeaponType != CURRENT_WEAPON_TYPE)
+            return false;
+
+        int currentStack = ActivePerks.ContainsKey(perk.PerkID) ? ActivePerks[perk.PerkID] : 0;
+        if (currentStack >= perk.MaxStack)
+            return false;
+
+        return true;
+    }
+
+    List<PerkData> PickRandom(List<PerkData> source, int count)
+    {
+        List<PerkData> pool = new List<PerkData>(source);
+        List<PerkData> result = new List<PerkData>();
+
+        int pickCount = Mathf.Min(count, pool.Count);
+        for (int i = 0; i < pickCount; i++)
+        {
+            int index = Random.Range(0, pool.Count);
+            result.Add(pool[index]);
+            pool.RemoveAt(index);
+        }
+
+        return result;
+    }
+
+    // ─────────────────────────────────────────────
     // 인벤토리 UI 등록 (씬마다 새로 생기는 프리팹이 자기 자신을 등록)
     // ─────────────────────────────────────────────
 

@@ -11,6 +11,7 @@ public class MonsterController : MonoBehaviour, IDamageable
     [Header("스탯")]
     [SerializeField] int _maxHP = 30;
     [SerializeField] int _attackDamage = 10;
+    [SerializeField] int _expReward = 5;
 
     [Header("비추적 상태 (Idle ↔ Patrol)")]
     [SerializeField] float _idleMinTime = 2f;
@@ -292,7 +293,9 @@ public class MonsterController : MonoBehaviour, IDamageable
     /// <summary>사망 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
     public void OnDeathAnimationEnd()
     {
-        // TODO: 경험치/골드 드랍
+        GameSession._instance.AddExp(_expReward);
+
+        // TODO: 골드 드랍
         Destroy(gameObject);
     }
 }

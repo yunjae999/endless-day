@@ -11,5 +11,6 @@ public class GameBootstrap : MonoBehaviour
     {
         TableDataManager._instance.TableAllLoad();
         ItemManager._instance.LoadAll();
+        PerkManager._instance.LoadAll();
     }
 }
