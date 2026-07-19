@@ -53,6 +53,12 @@ public class GameSession : TSingleton<GameSession>
         return level * EXP_PER_LEVEL_MULTIPLIER;
     }
 
+    /// <summary>HUD의 경험치 바가 진행률(현재/필요) 계산할 때 씀</summary>
+    public int GetCurrentRequiredExp()
+    {
+        return GetRequiredExp(CurrentLevel);
+    }
+
     void LevelUp()
     {
         CurrentLevel++;
@@ -112,6 +118,23 @@ public class GameSession : TSingleton<GameSession>
     {
         if (PlayerStats == statManager)
             PlayerStats = null;
+    }
+
+    // ─────────────────────────────────────────────
+    // PlayerController 등록 (HUD가 CurrentHP, 쿨타임 등을 읽어가기 위함)
+    // ─────────────────────────────────────────────
+
+    public PlayerController Player { get; private set; }
+
+    public void RegisterPlayer(PlayerController player)
+    {
+        Player = player;
+    }
+
+    public void UnregisterPlayer(PlayerController player)
+    {
+        if (Player == player)
+            Player = null;
     }
 
     // ─────────────────────────────────────────────

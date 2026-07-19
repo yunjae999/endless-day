@@ -27,6 +27,7 @@ public class PerkManager : TSingleton<PerkManager>
                 WeaponType = perkTable.ToI(perkId, "WeaponType"),
                 MaxStack = perkTable.ToI(perkId, "MaxStack"),
                 Description = perkTable.ToS(perkId, "Description"),
+                IconPath = perkTable.ToS(perkId, "IconPath"),
             };
 
             data.StatEffects = FindStatEffects(statTable, perkId);

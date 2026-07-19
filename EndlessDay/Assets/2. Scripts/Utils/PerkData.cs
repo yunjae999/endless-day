@@ -9,6 +9,7 @@ public class PerkData
     public int WeaponType;    // 0=전체 공용, 그 외=특정 무기 전용
     public int MaxStack;
     public string Description;
+    public string IconPath;
 
     public List<StatEffect> StatEffects = new List<StatEffect>();
     public SpecialEffect SpecialEffect;   // 없는 강화도 있음 (null 가능)

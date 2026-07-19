@@ -29,6 +29,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     float _rollSpeed;
     float _rollCooldownTimer;
 
+    /// <summary>0=바로 사용 가능, 1=방금 씀(쿨타임 꽉 참). HUD의 쿨타임 오버레이용</summary>
+    public float RollCooldownRatio => _rollCooldownTimer > 0f ? _rollCooldownTimer / _rollCooldown : 0f;
+
     public bool IsInvincible { get; private set; }
 
     [Header("Attack")]
@@ -41,6 +44,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] float _skillCooldown = 6f;
     float _skillCooldownTimer;
 
+    /// <summary>0=바로 사용 가능, 1=방금 씀. HUD의 쿨타임 오버레이용</summary>
+    public float SkillCooldownRatio => _skillCooldownTimer > 0f ? _skillCooldownTimer / _skillCooldown : 0f;
+
     void Awake()
     {
         _animator = GetComponentInChildren<Animator>();
@@ -50,7 +56,16 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (_attackHitbox != null)
             _attackHitbox.enabled = false;
+
+        GameSession._instance.RegisterPlayer(this);
     }
+
+    void OnDestroy()
+    {
+        if (GameSession._instance != null)
+            GameSession._instance.UnregisterPlayer(this);
+    }
+
     void Start()
     {
         _statManager.InitBaseStats();
