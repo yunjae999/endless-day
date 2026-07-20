@@ -126,3 +126,17 @@ InitTestScene*.unity*
 !GameDataTableConverter/Tables/*.xlsx
 !GameDataTableConverter/Libs/
 !GameDataTableConverter/Libs/*.dll
+
+# --------------------------------------------------
+# Server / DB Projects
+# --------------------------------------------------
+# Keep project folders (all levels)
+!Server/
+!Server/GameServer/
+!DB/
+!DB/GameDB/
+# Keep project/solution files
+!Server/GameServer/*.csproj
+!Server/GameServer/*.sln
+!DB/GameDB/*.csproj
+!DB/GameDB/*.sln
