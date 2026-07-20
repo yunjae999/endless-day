@@ -9,6 +9,8 @@ using UnityEngine.UI;
 /// </summary>
 public class UIPerkCard : MonoBehaviour
 {
+    [SerializeField] Image _icon;
+    [SerializeField] Image _cardBackground;
     [SerializeField] TextMeshProUGUI _nameText;
     [SerializeField] TextMeshProUGUI _descriptionText;
     [SerializeField] TextMeshProUGUI _gradeText;
@@ -28,10 +30,13 @@ public class UIPerkCard : MonoBehaviour
     static readonly Dictionary<int, Color> _gradeColors = new Dictionary<int, Color>
     {
         { 1, Color.white },
-        { 2, new Color(0.35f, 0.55f, 1f) },     // 파랑
-        { 3, new Color(0.65f, 0.35f, 0.95f) },  // 보라
-        { 4, new Color(1f, 0.84f, 0.2f) },      // 노랑
+        { 2, Color.blue },     // 파랑
+        { 3, Color.magenta },  // 보라
+        { 4, Color.yellow },      // 노랑
     };
+
+    // 카드 기본 배경색 (등급색과 섞을 베이스) - 프로젝트 UI 톤에 맞춰 조정 가능
+    static readonly Color _baseCardColor = new Color(0.16f, 0.18f, 0.21f, 1f);
 
     public void Init(UIPerkSelectionController controller)
     {
@@ -48,9 +53,24 @@ public class UIPerkCard : MonoBehaviour
         Color gradeColor = _gradeColors.ContainsKey(perk.Grade) ? _gradeColors[perk.Grade] : Color.white;
         string gradeName = _gradeNames.ContainsKey(perk.Grade) ? _gradeNames[perk.Grade] : "?";
 
-        _gradeText.text = gradeName;
+        _gradeText.text = "[" + gradeName + "]";
         _gradeText.color = gradeColor;
         _nameText.color = gradeColor;   // 이름도 등급색으로 - 카드가 한눈에 구분되게
+
+        if (_cardBackground != null)
+        {
+            // 알파를 낮추면 배경이 비쳐서 투명하게 보이니, 불투명 상태로 기본색과 등급색을 섞음
+            Color backgroundColor = gradeColor;
+            backgroundColor.a = 1f;
+            _cardBackground.color = backgroundColor;
+        }
+
+        if (_icon != null)
+        {
+            Sprite sprite = !string.IsNullOrEmpty(perk.IconPath) ? Resources.Load<Sprite>(perk.IconPath) : null;
+            _icon.sprite = sprite;
+            _icon.enabled = sprite != null;
+        }
     }
 
     void OnClick()
