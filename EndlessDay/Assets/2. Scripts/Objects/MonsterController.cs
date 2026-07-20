@@ -12,6 +12,7 @@ public class MonsterController : MonoBehaviour, IDamageable
     [SerializeField] int _maxHP = 30;
     [SerializeField] int _attackDamage = 10;
     [SerializeField] int _expReward = 5;
+    [SerializeField] int _goldReward = 10;
 
     [Header("비추적 상태 (Idle ↔ Patrol)")]
     [SerializeField] float _idleMinTime = 2f;
@@ -294,8 +295,8 @@ public class MonsterController : MonoBehaviour, IDamageable
     public void OnDeathAnimationEnd()
     {
         GameSession._instance.AddExp(_expReward);
+        GameSession._instance.AddGold(_goldReward);
 
-        // TODO: 골드 드랍
         Destroy(gameObject);
     }
 }

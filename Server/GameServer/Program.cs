@@ -5,7 +5,7 @@ namespace GameServer
     class Program
     {
         // Unity 프로젝트의 Assets/Resources/Tables 폴더 경로 - 실제 레포 구조에 맞게 조정해주세요
-        const string TABLES_PATH = @"../../EndlessDay/Assets/Resources/Tables";
+        const string TABLES_PATH = @"../../../../EndlessDay/Assets/Resources/Tables";
 
         static void Main(string[] args)
         {

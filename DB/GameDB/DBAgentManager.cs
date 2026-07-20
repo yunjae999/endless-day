@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 
@@ -180,7 +181,7 @@ namespace GameDB
         {
             List<InventoryItemRow> result = new List<InventoryItemRow>();
             string query = string.Format(
-                "SELECT ItemType, ItemID, Quantity FROM {0}.PlayerInventory WHERE UserID = @userId", _dbName);
+                "SELECT SlotIndex, ItemType, ItemID, Quantity FROM {0}.PlayerInventory WHERE UserID = @userId", _dbName);
             try
             {
                 MySqlCommand cmd = new MySqlCommand(query, _connection);
@@ -191,6 +192,7 @@ namespace GameDB
                 {
                     result.Add(new InventoryItemRow
                     {
+                        SlotIndex = reader.GetInt32("SlotIndex"),
                         ItemType = reader.GetInt32("ItemType"),
                         ItemID = reader.GetInt32("ItemID"),
                         Quantity = reader.GetInt32("Quantity")
@@ -203,6 +205,61 @@ namespace GameDB
                 Console.WriteLine("[DB] GetPlayerInventory 실패 : {0}", ex.Message);
             }
             return result;
+        }
+
+        // ─────────────────────────────────────────────
+        // 인벤토리 창 닫을 때 전체 저장
+        // ─────────────────────────────────────────────
+
+        /// <summary>기존 PlayerInventory를 싹 지우고, 클라가 보낸 상태로 통째로 다시 씀. 장착 슬롯도 같이 갱신.</summary>
+        public bool SaveInventory(int userId, string itemsJson, string equippedJson)
+        {
+            MySqlTransaction transaction = _connection.BeginTransaction();
+            try
+            {
+                string deleteQuery = string.Format(
+                    "DELETE FROM {0}.PlayerInventory WHERE UserID = @userId", _dbName);
+                MySqlCommand deleteCmd = new MySqlCommand(deleteQuery, _connection, transaction);
+                deleteCmd.Parameters.AddWithValue("@userId", userId);
+                deleteCmd.ExecuteNonQuery();
+
+                JArray items = JArray.Parse(itemsJson);
+                foreach (JToken token in items)
+                {
+                    JArray entry = (JArray)token;
+                    int slotIndex = entry[0].ToObject<int>();
+                    int itemType = entry[1].ToObject<int>();
+                    int itemId = entry[2].ToObject<int>();
+                    int quantity = entry[3].ToObject<int>();
+
+                    string insertQuery = string.Format(
+                        "INSERT INTO {0}.PlayerInventory (UserID, SlotIndex, ItemType, ItemID, Quantity) " +
+                        "VALUES (@userId, @slot, @type, @id, @qty)", _dbName);
+                    MySqlCommand insertCmd = new MySqlCommand(insertQuery, _connection, transaction);
+                    insertCmd.Parameters.AddWithValue("@userId", userId);
+                    insertCmd.Parameters.AddWithValue("@slot", slotIndex);
+                    insertCmd.Parameters.AddWithValue("@type", itemType);
+                    insertCmd.Parameters.AddWithValue("@id", itemId);
+                    insertCmd.Parameters.AddWithValue("@qty", quantity);
+                    insertCmd.ExecuteNonQuery();
+                }
+
+                string equipQuery = string.Format(
+                    "UPDATE {0}.PlayerData SET EquippedEquipment = @equipped WHERE UserID = @userId", _dbName);
+                MySqlCommand equipCmd = new MySqlCommand(equipQuery, _connection, transaction);
+                equipCmd.Parameters.AddWithValue("@equipped", equippedJson);
+                equipCmd.Parameters.AddWithValue("@userId", userId);
+                equipCmd.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                Console.WriteLine("[DB] SaveInventory 실패 : {0}", ex.Message);
+                return false;
+            }
         }
 
         // ─────────────────────────────────────────────
@@ -329,6 +386,7 @@ namespace GameDB
 
     class InventoryItemRow
     {
+        public int SlotIndex { get; set; }
         public int ItemType { get; set; }
         public int ItemID { get; set; }
         public int Quantity { get; set; }

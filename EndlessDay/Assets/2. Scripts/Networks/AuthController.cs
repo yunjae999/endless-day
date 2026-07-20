@@ -146,7 +146,7 @@ public class AuthController : MonoBehaviour
     void OnInventoryLoaded(List<InventoryItemData> items)
     {
         foreach (InventoryItemData item in items)
-            GameSession._instance.Inventory.AddItem(item.ItemId, item.Quantity);
+            GameSession._instance.Inventory.SetSlotDirectly(item.SlotIndex, item.ItemId, item.Quantity);
     }
 
     void OnLoginFail(int reasonCode)

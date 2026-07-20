@@ -1,4 +1,5 @@
 using Defines;
+using Newtonsoft.Json.Linq;
 
 /// <summary>
 /// 인벤토리(60칸)와 장착 슬롯(7칸)의 실제 상태와 이동/합치기/장착 규칙을 담당.
@@ -235,5 +236,51 @@ public class InventoryModel
             case 2: return type == EquipmentType.Shoes;
             default: return type == EquipmentType.Accessory;   // 3~6
         }
+    }
+
+    // ─────────────────────────────────────────────
+    // 저장 / 로드 (서버 통신용 - 위치 정보 포함)
+    // ─────────────────────────────────────────────
+
+    /// <summary>인벤토리 창 닫을 때 서버로 보낼 JSON. [[슬롯,타입,아이템ID,개수], ...] 형태</summary>
+    public string SerializeItemsToJson()
+    {
+        JArray array = new JArray();
+
+        for (int i = 0; i < INVENTORY_SIZE; i++)
+        {
+            ItemStack stack = InventorySlots[i];
+            if (stack.IsEmpty)
+                continue;
+
+            ItemData data = ItemManager._instance.Get(stack.ItemID);
+            int itemType = (data != null && data.Category == ItemCategory.Equipment) ? 1 : 2;
+
+            array.Add(new JArray(i, itemType, stack.ItemID, stack.Quantity));
+        }
+
+        return array.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    /// <summary>장착 슬롯 7칸을 서버로 보낼 JSON. [0,0,0,1002,0,0,0] 형태</summary>
+    public string SerializeEquippedToJson()
+    {
+        JArray array = new JArray();
+        for (int i = 0; i < EQUIP_SLOT_COUNT; i++)
+            array.Add(EquippedItemIDs[i]);
+
+        return array.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    /// <summary>
+    /// 로그인 시 서버가 보내준 저장된 위치 그대로 배치. AddItem()과 달리 합치기/빈칸탐색 없이
+    /// 지정한 슬롯에 정확히 놓는다 - 유저가 정리해둔 배치를 그대로 복원하기 위함.
+    /// </summary>
+    public void SetSlotDirectly(int slotIndex, int itemId, int quantity)
+    {
+        if (!IsValidInventoryIndex(slotIndex))
+            return;
+
+        InventorySlots[slotIndex] = new ItemStack(itemId, quantity);
     }
 }

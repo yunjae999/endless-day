@@ -32,9 +32,13 @@ public class UIHudController : MonoBehaviour
     [SerializeField] Image _rollCooldownOverlay;
     [SerializeField] Image _skillCooldownOverlay;
 
-    [Header("강화 아이콘 (개수 바뀔 때만 다시 생성)")]
+    [Header("강화 아이콘 (최대 11개, 넘으면 +N 표시)")]
     [SerializeField] UIHudPerkIcon _perkIconPrefab;
     [SerializeField] Transform _perkIconParent;
+    [SerializeField] GameObject _perkOverflowRoot;   // "+N" 표시용, 씬에 미리 배치 (12번째 칸 자리)
+    [SerializeField] TextMeshProUGUI _perkOverflowText;
+
+    const int MAX_VISIBLE_PERKS = 11;
 
     List<UIHudPerkIcon> _perkIcons = new List<UIHudPerkIcon>();
     int _lastPerkCount = -1;   // 강화 개수가 바뀔 때만 아이콘 목록을 다시 그리기 위한 캐시
@@ -93,11 +97,11 @@ public class UIHudController : MonoBehaviour
         if (player == null)
             return;
 
-        _rollCooldownOverlay.fillAmount = player.RollCooldownRatio;
-        _skillCooldownOverlay.fillAmount = player.SkillCooldownRatio;
+        _rollCooldownOverlay.fillAmount = player.RollReadyRatio;
+        _skillCooldownOverlay.fillAmount = player.SkillReadyRatio;
     }
 
-    /// <summary>강화 목록은 자주 안 바뀌니, 실제로 개수가 달라졌을 때만 다시 그림</summary>
+    /// <summary>강화 목록은 자주 안 바뀌니, 실제로 개수가 달라졌을 때만 다시 그림. 최대 11개까지만 표시</summary>
     void RefreshPerkIcons()
     {
         Dictionary<int, int> activePerks = GameSession._instance.ActivePerks;
@@ -110,8 +114,12 @@ public class UIHudController : MonoBehaviour
             Destroy(icon.gameObject);
         _perkIcons.Clear();
 
+        int shown = 0;
         foreach (KeyValuePair<int, int> pair in activePerks)
         {
+            if (shown >= MAX_VISIBLE_PERKS)
+                break;
+
             PerkData perk = PerkManager._instance.Get(pair.Key);
             if (perk == null)
                 continue;
@@ -119,6 +127,15 @@ public class UIHudController : MonoBehaviour
             UIHudPerkIcon icon = Instantiate(_perkIconPrefab, _perkIconParent);
             icon.SetContent(perk, pair.Value);
             _perkIcons.Add(icon);
+            shown++;
+        }
+
+        int overflow = activePerks.Count - shown;
+        if (_perkOverflowRoot != null)
+        {
+            _perkOverflowRoot.SetActive(overflow > 0);
+            if (overflow > 0 && _perkOverflowText != null)
+                _perkOverflowText.text = "+" + overflow;
         }
     }
 }

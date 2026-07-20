@@ -182,6 +182,10 @@ namespace GameServer
                         Handle_SellItemResult(packet);
                         break;
 
+                    case ServerDBProtocol.ReceiveProtocol.SaveInventoryResult:
+                        Handle_SaveInventoryResult(packet);
+                        break;
+
                     default:
                         Console.WriteLine("[DBClient] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -248,7 +252,15 @@ namespace GameServer
             DB_InventoryItem item =
                 (DB_InventoryItem)ConvertPacket.UnpackData(packet, typeof(DB_InventoryItem));
 
-            _tcpServer?.OnInventoryItemResult(_currentInventorySocketId, item._itemType, item._itemId, item._quantity);
+            _tcpServer?.OnInventoryItemResult(_currentInventorySocketId, item._slotIndex, item._itemType, item._itemId, item._quantity);
+        }
+
+        void Handle_SaveInventoryResult(Packet packet)
+        {
+            DB_SaveInventory_Result result =
+                (DB_SaveInventory_Result)ConvertPacket.UnpackData(packet, typeof(DB_SaveInventory_Result));
+
+            Console.WriteLine("[DBClient] 인벤토리 저장 결과 : " + (result._result == 1 ? "성공" : "실패"));
         }
 
         void Handle_BuyItemResult(Packet packet)
@@ -346,6 +358,18 @@ namespace GameServer
                 _newGold = newGold
             };
             Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.SellItem, req);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+        }
+
+        public void RequestSaveInventory(int userId, string itemsJson, string equippedJson)
+        {
+            DB_SaveInventory_Request req = new DB_SaveInventory_Request
+            {
+                _userId = userId,
+                _itemsJson = itemsJson,
+                _equippedJson = equippedJson
+            };
+            Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.SaveInventory, req);
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
         }
 

@@ -10,6 +10,7 @@
         GetPlayerInventory = 4,     // 로그인 성공 후 보유 인벤토리 조회
         BuyItem = 6,
         SellItem = 7,
+        SaveInventory = 8,
     }
 
     public enum ReceiveProtocol    // DB → 서버
@@ -23,6 +24,7 @@
         InventoryItem = 105,
         BuyItemResult = 108,
         SellItemResult = 109,
+        SaveInventoryResult = 110,
     }
 }
 
@@ -40,6 +42,7 @@ namespace DBServerProtocol
         InventoryItem = 105,
         BuyItemResult = 108,
         SellItemResult = 109,
+        SaveInventoryResult = 110,
     }
 
     public enum ReceiveProtocol    // 서버 → DB
@@ -51,5 +54,6 @@ namespace DBServerProtocol
         GetPlayerInventory = 4,
         BuyItem = 6,
         SellItem = 7,
+        SaveInventory = 8,
     }
 }

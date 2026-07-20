@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
@@ -42,13 +41,7 @@ public class UIShopController : MonoBehaviour
             _shopPanelRoot.SetActive(false);   // 시작할 땐 닫혀있게
     }
 
-    void Update()
-    {
-        // TODO: NPC 상호작용 존 만들면 이 부분을 "범위 안 + E" 조건으로 교체
-        if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
-            ToggleShopPanel();
-    }
-
+    /// <summary>NPC(UIShopNPC)가 범위 안에서 E를 눌렀을 때 호출</summary>
     public void ToggleShopPanel()
     {
         if (_shopPanelRoot == null)
@@ -56,6 +49,7 @@ public class UIShopController : MonoBehaviour
 
         bool isOpen = _shopPanelRoot.activeSelf;
         _shopPanelRoot.SetActive(!isOpen);
+        GameSession._instance.SetShopOpen(!isOpen);
 
         if (!isOpen)
             RefreshSellSlots();   // 열릴 때마다 보유 목록 최신화 (그 사이 던전 등에서 아이템이 바뀌었을 수 있음)

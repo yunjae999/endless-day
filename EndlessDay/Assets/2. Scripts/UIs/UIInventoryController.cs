@@ -33,13 +33,24 @@ public class UIInventoryController : MonoBehaviour
             GameSession._instance.UnregisterInventoryUI(this);
     }
 
-    /// <summary>GameSession이 열기/닫기 요청 시 호출. 보일 때는 최신 상태로 새로고침도 같이 함</summary>
+    /// <summary>GameSession이 열기/닫기 요청 시 호출. 보일 때는 새로고침, 닫힐 때는 서버에 저장</summary>
     public void SetVisible(bool visible)
     {
+        bool wasVisible = gameObject.activeSelf;
+
         gameObject.SetActive(visible);
 
         if (visible)
             RefreshAll();
+        else if (wasVisible)
+            SaveToServer();
+    }
+
+    void SaveToServer()
+    {
+        string itemsJson = _model.SerializeItemsToJson();
+        string equippedJson = _model.SerializeEquippedToJson();
+        NetworkManager._instance.SendSaveInventory(itemsJson, equippedJson);
     }
 
     void CreateSlots()

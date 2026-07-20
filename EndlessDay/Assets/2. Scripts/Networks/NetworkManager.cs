@@ -317,6 +317,7 @@ public class NetworkManager : MonoBehaviour
 
         _pendingInventoryItems.Add(new InventoryItemData
         {
+            SlotIndex = item._slotIndex,
             ItemType = item._itemType,
             ItemId = item._itemId,
             Quantity = item._quantity
@@ -396,6 +397,19 @@ public class NetworkManager : MonoBehaviour
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
     }
 
+    /// <summary>인벤토리 창 닫을 때 호출 - 위치 포함해서 전체를 한 번에 저장 요청 (응답은 안 기다림)</summary>
+    public void SendSaveInventory(string itemsJson, string equippedJson)
+    {
+        SaveInventory_Request req = new SaveInventory_Request
+        {
+            _itemsJson = itemsJson,
+            _equippedJson = equippedJson
+        };
+        Packet packet = ConvertPacket.MakePacket((int)SendProtocol.SaveInventory, req);
+        lock (_sendQueue)
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+    }
+
     // ─────────────────────────────────────────────
     // 종료 / 연결 끊김
     // ─────────────────────────────────────────────
@@ -432,6 +446,7 @@ public class LoginResultData
 /// <summary>인벤토리 항목 하나 (서버가 로그인 직후 보내주는 보유 목록의 각 행)</summary>
 public class InventoryItemData
 {
+    public int SlotIndex;
     public int ItemType;   // 1=장비, 2=소비
     public int ItemId;
     public int Quantity;

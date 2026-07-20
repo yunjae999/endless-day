@@ -10,6 +10,29 @@ using UnityEngine;
 public class GameSession : TSingleton<GameSession>
 {
     bool _isInventoryOpen;
+    public bool IsInventoryOpen => _isInventoryOpen;
+
+    public bool IsShopOpen { get; private set; }
+
+    // ─────────────────────────────────────────────
+    // 게임 정지 (여러 시스템이 동시에 정지를 요청할 수 있어 카운터로 관리)
+    // ─────────────────────────────────────────────
+
+    int _pauseRequestCount;
+
+    public void RequestPause()
+    {
+        _pauseRequestCount++;
+        Time.timeScale = 0f;
+    }
+
+    public void ReleasePause()
+    {
+        _pauseRequestCount = Mathf.Max(0, _pauseRequestCount - 1);
+
+        if (_pauseRequestCount <= 0)
+            Time.timeScale = 1f;
+    }
     UIInventoryController _inventoryUI;
 
     public int UserId { get; private set; }
@@ -84,12 +107,18 @@ public class GameSession : TSingleton<GameSession>
             Debug.Log(" - " + perk.PerkName);
 
         if (_perkSelectionUI != null)
+        {
+            IsPerkSelectionOpen = true;
+            RequestPause();
             _perkSelectionUI.Show(picked);
+        }
         else
+        {
             Debug.LogWarning("[GameSession] 강화 선택 UI가 등록되어 있지 않음 (씬에 배치됐는지 확인)");
+        }
     }
 
-    /// <summary>강화 선택 완료 시 호출(지금은 UI 대신 테스트 코드에서 직접 호출). 스택 +1 하고 스탯 재계산까지</summary>
+    /// <summary>강화 선택 완료 시 호출(카드 클릭 시 UI가 호출). 스택 +1, 스탯 재계산, 게임 재개까지</summary>
     public void ApplyPerkChoice(int perkId)
     {
         if (!ActivePerks.ContainsKey(perkId))
@@ -101,7 +130,13 @@ public class GameSession : TSingleton<GameSession>
             + " (현재 " + ActivePerks[perkId] + "스택)");
 
         PlayerStats?.Recalculate();
+
+        IsPerkSelectionOpen = false;
+        ReleasePause();
     }
+
+    /// <summary>강화 카드가 떠있는 동안엔 true - 다른 UI(인벤토리/상점 등)가 이걸 보고 입력을 막을 수 있음</summary>
+    public bool IsPerkSelectionOpen { get; private set; }
 
     // ─────────────────────────────────────────────
     // PlayerStatManager 등록 (씬마다 새로 생기는 Player 오브젝트가 자기 자신을 등록)
@@ -203,8 +238,19 @@ public class GameSession : TSingleton<GameSession>
     {
         _isInventoryOpen = !_isInventoryOpen;
 
+        if (_isInventoryOpen)
+            RequestPause();
+        else
+            ReleasePause();
+
         if (_inventoryUI != null)
             _inventoryUI.SetVisible(_isInventoryOpen);
+    }
+
+    /// <summary>UIShopController가 상점 여닫을 때마다 호출 - 다른 UI(인벤토리 등)와 플레이어 조작이 이 상태를 보고 막힘</summary>
+    public void SetShopOpen(bool isOpen)
+    {
+        IsShopOpen = isOpen;   // 시간은 안 멈춤 (마을은 몬스터 없는 안전지대라 조작만 막으면 충분)
     }
 
     // ─────────────────────────────────────────────

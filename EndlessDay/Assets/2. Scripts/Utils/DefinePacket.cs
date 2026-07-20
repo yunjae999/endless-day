@@ -179,6 +179,7 @@ namespace DefinePacket
     [StructLayout(LayoutKind.Sequential)]
     public struct DB_InventoryItem
     {
+        public int _slotIndex;
         public int _itemType;   // 1=장비, 2=소비
         public int _itemId;
         public int _quantity;
@@ -195,9 +196,39 @@ namespace DefinePacket
     [StructLayout(LayoutKind.Sequential)]
     public struct Inventory_Item
     {
+        public int _slotIndex;
         public int _itemType;
         public int _itemId;
         public int _quantity;
+    }
+
+    /// <summary>클라 → 서버 : 인벤토리 전체 저장(인벤토리 창 닫을 때). 위치 포함해서 한 번에 통째로</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SaveInventory_Request
+    {
+        // itemsJson 예: [[슬롯,타입,아이템ID,개수], ...]
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 900)]
+        public string _itemsJson;
+        // equippedJson 예: [0,0,0,1002,0,0,0] (7칸)
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string _equippedJson;
+    }
+
+    /// <summary>서버 → DB : 인벤토리 전체 저장 (기존 것 지우고 통째로 새로 씀)</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_SaveInventory_Request
+    {
+        public int _userId;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 900)]
+        public string _itemsJson;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string _equippedJson;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_SaveInventory_Result
+    {
+        public int _result;
     }
 
     /// <summary>서버 → DB : 구매 반영 (골드는 서버가 이미 검증/계산 완료, DB는 저장만)</summary>

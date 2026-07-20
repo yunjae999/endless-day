@@ -229,6 +229,10 @@ namespace GameServer
                         Handle_SellItem(socketId, packet);
                         break;
 
+                    case ServerClientProtocol.ReceiveProtocol.SaveInventory:
+                        Handle_SaveInventory(socketId, packet);
+                        break;
+
                     default:
                         Console.WriteLine("[TCPServer] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -370,6 +374,18 @@ namespace GameServer
             _dbClient.RequestSellItem(socketId, client.UserId, req._itemId, client.Gold);
         }
 
+        void Handle_SaveInventory(int socketId, Packet packet)
+        {
+            SaveInventory_Request req =
+                (SaveInventory_Request)ConvertPacket.UnpackData(packet, typeof(SaveInventory_Request));
+
+            if (!_clientList.ContainsKey(socketId))
+                return;
+            Client client = _clientList[socketId];
+
+            _dbClient.RequestSaveInventory(client.UserId, req._itemsJson, req._equippedJson);
+        }
+
         // ─────────────────────────────────────────────
         // Guest / Client 관리
         // ─────────────────────────────────────────────
@@ -471,10 +487,11 @@ namespace GameServer
         }
 
         /// <summary>DBClient가 인벤토리 항목 하나를 받으면 호출 - 클라에도 그대로 전달</summary>
-        public void OnInventoryItemResult(int socketId, int itemType, int itemId, int quantity)
+        public void OnInventoryItemResult(int socketId, int slotIndex, int itemType, int itemId, int quantity)
         {
             Inventory_Item itemData = new Inventory_Item
             {
+                _slotIndex = slotIndex,
                 _itemType = itemType,
                 _itemId = itemId,
                 _quantity = quantity

@@ -161,6 +161,10 @@ namespace GameDB
                         Handle_SellItem(packet);
                         break;
 
+                    case ReceiveProtocol.SaveInventory:
+                        Handle_SaveInventory(packet);
+                        break;
+
                     default:
                         Console.WriteLine("[DBServer] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -250,6 +254,7 @@ namespace GameDB
             {
                 DB_InventoryItem itemData = new DB_InventoryItem
                 {
+                    _slotIndex = item.SlotIndex,
                     _itemType = item.ItemType,
                     _itemId = item.ItemID,
                     _quantity = item.Quantity
@@ -287,6 +292,20 @@ namespace GameDB
             _sendQueue.Enqueue(ConvertPacket.ToBytes(resultPacket));
 
             Console.WriteLine("[DBServer] 판매 처리 - UserID : {0}, ItemID : {1} : {2}", req._userId, req._itemId, success ? "성공" : "실패");
+        }
+
+        void Handle_SaveInventory(Packet packet)
+        {
+            DB_SaveInventory_Request req =
+                (DB_SaveInventory_Request)ConvertPacket.UnpackData(packet, typeof(DB_SaveInventory_Request));
+
+            bool success = _db.SaveInventory(req._userId, req._itemsJson, req._equippedJson);
+
+            DB_SaveInventory_Result result = new DB_SaveInventory_Result { _result = success ? 1 : 0 };
+            Packet resultPacket = ConvertPacket.MakePacket((int)SendProtocol.SaveInventoryResult, result);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(resultPacket));
+
+            Console.WriteLine("[DBServer] 인벤토리 저장 - UserID : {0} : {1}", req._userId, success ? "성공" : "실패");
         }
 
         public void Release()

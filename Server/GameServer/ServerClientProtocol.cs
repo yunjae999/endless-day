@@ -9,6 +9,7 @@
         Login = 3,
         BuyItem = 4,
         SellItem = 5,
+        SaveInventory = 6,
     }
 
     public enum SendProtocol      // 서버 → 클라
@@ -39,6 +40,7 @@ namespace ClientServerProtocol
         Login = 3,
         BuyItem = 4,
         SellItem = 5,
+        SaveInventory = 6,
     }
 
     public enum ReceiveProtocol   // 서버 → 클라

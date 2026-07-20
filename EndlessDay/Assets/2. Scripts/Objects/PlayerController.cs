@@ -29,8 +29,8 @@ public class PlayerController : MonoBehaviour, IDamageable
     float _rollSpeed;
     float _rollCooldownTimer;
 
-    /// <summary>0=바로 사용 가능, 1=방금 씀(쿨타임 꽉 참). HUD의 쿨타임 오버레이용</summary>
-    public float RollCooldownRatio => _rollCooldownTimer > 0f ? _rollCooldownTimer / _rollCooldown : 0f;
+    /// <summary>1=바로 사용 가능(꽉 참), 0=방금 씀. 쿨타임 진행에 따라 다시 채워짐. HUD 표시용</summary>
+    public float RollReadyRatio => _rollCooldownTimer > 0f ? 1f - (_rollCooldownTimer / _rollCooldown) : 1f;
 
     public bool IsInvincible { get; private set; }
 
@@ -44,8 +44,8 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] float _skillCooldown = 6f;
     float _skillCooldownTimer;
 
-    /// <summary>0=바로 사용 가능, 1=방금 씀. HUD의 쿨타임 오버레이용</summary>
-    public float SkillCooldownRatio => _skillCooldownTimer > 0f ? _skillCooldownTimer / _skillCooldown : 0f;
+    /// <summary>1=바로 사용 가능(꽉 참), 0=방금 씀. 쿨타임 진행에 따라 다시 채워짐. HUD 표시용</summary>
+    public float SkillReadyRatio => _skillCooldownTimer > 0f ? 1f - (_skillCooldownTimer / _skillCooldown) : 1f;
 
     void Awake()
     {
@@ -78,6 +78,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     }
     void PlayerProcess()
     {
+        // 상점 열려있는 동안엔 조작 자체를 막음 (시간은 안 멈추니 Idle 모션 등은 자연스럽게 계속 재생됨)
+        if (GameSession._instance.IsShopOpen)
+            return;
+
         // Hit/Death 중엔 Animation Event가 상태를 관리하므로 여기서 개입하지 않음
         if (_currentState == PlayerActionState.HIT || _currentState == PlayerActionState.DEATH)
             return;
@@ -158,6 +162,10 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         if (IsDead)
             return;
+        if (GameSession._instance.IsPerkSelectionOpen)
+            return;
+        if (GameSession._instance.IsShopOpen)
+            return;
         GameSession._instance.ToggleInventory();
     }
     void SetRun(bool isRun)
@@ -203,6 +211,9 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     void TryStartRoll()
     {
+        if (GameSession._instance.IsShopOpen)
+            return;
+
         if (_rollCooldownTimer > 0f)
             return;
 
@@ -259,6 +270,9 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     void TryStartAttack()
     {
+        if (GameSession._instance.IsShopOpen)
+            return;
+
         // 기획서 FSM 규칙: Attack은 Idle/Move에서만 진입 가능
         if (_currentState != PlayerActionState.IDLE && _currentState != PlayerActionState.MOVE)
             return;
@@ -319,6 +333,9 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     void TryStartSkill()
     {
+        if (GameSession._instance.IsShopOpen)
+            return;
+
         if (_skillCooldownTimer > 0f)
             return;
 
