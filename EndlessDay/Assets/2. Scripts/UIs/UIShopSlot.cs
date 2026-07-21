@@ -3,43 +3,41 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public enum ShopSlotContext
-{
-    Buy,
-    Sell,
-}
-
 /// <summary>
-/// 상점 슬롯 하나 (구매 목록 칸 또는 보유 아이템 칸 공용).
-/// 클릭하면 컨트롤러에 "이 아이템 선택됨"을 알리고, 호버하면 툴팁을 띄운다.
-/// 실제로 살지 팔지 판단은 하지 않고, 선택 사실만 컨트롤러에게 전달한다.
+/// 상점 "구매 목록" 슬롯 전용. 아이콘+이름+가격을 항상 보여준다.
+/// 클릭하면 컨트롤러에 선택을 알리고, 호버하면 설명 툴팁을 띄운다.
 /// </summary>
 public class UIShopSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] Image _icon;
-    [SerializeField] TextMeshProUGUI _quantityText;   // 보유 아이템 칸에서만 사용, 상점 목록 칸은 항상 빈 문자열
-    [SerializeField] GameObject _selectedHighlight;   // 선택됐을 때 켜지는 테두리 등
+    [SerializeField] TextMeshProUGUI _nameText;
+    [SerializeField] TextMeshProUGUI _priceText;
+    [SerializeField] Image _slotBackground;
+    [SerializeField] Color _normalColor = Color.white;
+    [SerializeField] Color _selectedColor = Color.green;
 
     int _itemId;
     string _itemName;
     string _description;
     int _price;
+    Sprite _iconSprite;
     bool _hasItem;
 
     UIShopController _controller;
-    ShopSlotContext _context;
 
     public int ItemId => _itemId;
-    public ShopSlotContext Context => _context;
+    public string ItemName => _itemName;
+    public string Description => _description;
+    public int Price => _price;
+    public Sprite IconSprite => _iconSprite;
 
-    public void Init(UIShopController controller, ShopSlotContext context)
+    public void Init(UIShopController controller)
     {
         _controller = controller;
-        _context = context;
         SetSelected(false);
     }
 
-    public void SetContent(int itemId, string itemName, string description, int price, Sprite icon, int quantity = 0)
+    public void SetContent(int itemId, string itemName, string description, int price, Sprite icon)
     {
         _hasItem = true;
         _itemId = itemId;
@@ -48,24 +46,16 @@ public class UIShopSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         _price = price;
 
         _icon.sprite = icon;
-        _icon.enabled = true;
-        _quantityText.text = quantity > 1 ? quantity.ToString() : "";
-    }
+        _iconSprite = icon;
 
-    public void SetEmpty()
-    {
-        _hasItem = false;
-        _itemId = 0;
-        _icon.sprite = null;
-        _icon.enabled = false;
-        _quantityText.text = "";
-        SetSelected(false);
+        _nameText.text = itemName;
+        _priceText.text = price + " G";
     }
 
     public void SetSelected(bool selected)
     {
-        if (_selectedHighlight != null)
-            _selectedHighlight.SetActive(selected);
+        if (_slotBackground != null)
+            _slotBackground.color = selected ? _selectedColor : _normalColor;
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -73,15 +63,15 @@ public class UIShopSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         if (!_hasItem)
             return;
 
-        _controller.OnSlotClicked(this);
+        _controller.OnBuySlotClicked(this);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (!_hasItem)
+        if (!_hasItem || string.IsNullOrEmpty(_description))
             return;
 
-        UITooltip._instance.Show(_itemName, _description, eventData.position, _price + " G");
+        UITooltip._instance.Show(_itemName, _description, eventData.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)

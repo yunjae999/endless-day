@@ -58,6 +58,26 @@ public class GameSession : TSingleton<GameSession>
     /// <summary>PerkID → 현재 스택 수. 던전 재도전마다 리셋되는 값</summary>
     public Dictionary<int, int> ActivePerks { get; private set; } = new Dictionary<int, int>();
 
+    // ─────────────────────────────────────────────
+    // 던전 진행 상태 (재도전마다 리셋)
+    // ─────────────────────────────────────────────
+
+    public int CurrentDungeonFloor { get; private set; }
+    public int CurrentRoomOrder { get; private set; }
+
+    /// <summary>던전 입구에서 호출 - "새로운 하루" 시작. 이번 시도용 값만 초기화, 골드/인벤토리는 유지</summary>
+    public void StartNewDungeonRun()
+    {
+        CurrentLevel = 1;
+        CurrentExp = 0;
+        ActivePerks.Clear();
+
+        CurrentDungeonFloor = 1;
+        CurrentRoomOrder = 1;
+
+        PlayerStats?.Recalculate();   // 강화가 다 사라졌으니 스탯도 기본값으로 다시 계산
+    }
+
     public void AddExp(int amount)
     {
         CurrentExp += amount;

@@ -11,9 +11,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/1. Scenes/VillageScene.unity
     guid: c807624b4a3120441aa4ea879ebfea29
-  - enabled: 1
+  - enabled: 0
     path: Assets/1. Scenes/InventoryScene.unity
     guid: 1f2ead6ef8c382c489de1c5448d274df
+  - enabled: 1
+    path: Assets/1. Scenes/DungeonScene.unity
+    guid: 7a1e9a57c49f3814891bc0bb7739d56d
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

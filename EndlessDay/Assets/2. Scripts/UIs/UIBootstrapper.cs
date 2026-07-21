@@ -12,7 +12,7 @@ public class UIBootstrapper : MonoBehaviour
 
     void Awake()
     {
-        //Instantiate(_hudPrefab);
+        Instantiate(_hudPrefab);
         Instantiate(_inventoryPrefab);
     }
 }

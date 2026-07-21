@@ -1,15 +1,18 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 상점 UI 전체를 관장. 왼쪽(구매 목록)은 ItemManager 전체 카탈로그, 오른쪽(보유 아이템)은
-/// GameSession.Inventory에서 채운다. 슬롯 클릭으로 선택하고, 하단 버튼으로 구매/판매를 요청한다.
+/// 상점 UI 전체를 관장. 왼쪽(구매 목록, UIShopSlot)은 ItemManager 전체 카탈로그,
+/// 오른쪽(보유 아이템, UIShopOwnedSlot)은 GameSession.Inventory에서 채운다.
+/// 슬롯 클릭으로 선택하고, 하단 버튼으로 구매/판매를 요청한다.
 /// </summary>
 public class UIShopController : MonoBehaviour
 {
     [Header("슬롯 프리팹 / 배치 부모")]
-    [SerializeField] UIShopSlot _slotPrefab;
+    [SerializeField] UIShopSlot _buySlotPrefab;
+    [SerializeField] UIShopOwnedSlot _sellSlotPrefab;
     [SerializeField] Transform _buyGridParent;
     [SerializeField] Transform _sellGridParent;
 
@@ -17,14 +20,24 @@ public class UIShopController : MonoBehaviour
     [SerializeField] Button _buyButton;
     [SerializeField] Button _sellButton;
 
+    [Header("골드 표시")]
+    [SerializeField] TextMeshProUGUI _goldText;
+
+    [Header("선택한 아이템 상세정보 패널")]
+    [SerializeField] GameObject _detailPanelRoot;   // 아무것도 선택 안 했으면 꺼둠
+    [SerializeField] Image _detailIcon;
+    [SerializeField] TextMeshProUGUI _detailNameText;
+    [SerializeField] TextMeshProUGUI _detailDescriptionText;
+    [SerializeField] TextMeshProUGUI _detailPriceText;
+
     [Header("임시 - NPC 상호작용 존 만들기 전까지, E키로 바로 열고 닫기")]
     [SerializeField] GameObject _shopPanelRoot;   // 이 오브젝트를 켜고 끔 (보통 이 스크립트가 붙은 오브젝트 자신)
 
     List<UIShopSlot> _buySlots = new List<UIShopSlot>();
-    List<UIShopSlot> _sellSlots = new List<UIShopSlot>();
+    List<UIShopOwnedSlot> _sellSlots = new List<UIShopOwnedSlot>();
 
     UIShopSlot _selectedBuySlot;
-    UIShopSlot _selectedSellSlot;
+    UIShopOwnedSlot _selectedSellSlot;
 
     void Awake()
     {
@@ -36,6 +49,10 @@ public class UIShopController : MonoBehaviour
 
         CreateBuySlots();
         RefreshSellSlots();
+        RefreshGold();
+
+        if (_detailPanelRoot != null)
+            _detailPanelRoot.SetActive(false);
 
         if (_shopPanelRoot != null)
             _shopPanelRoot.SetActive(false);   // 시작할 땐 닫혀있게
@@ -52,7 +69,10 @@ public class UIShopController : MonoBehaviour
         GameSession._instance.SetShopOpen(!isOpen);
 
         if (!isOpen)
+        {
             RefreshSellSlots();   // 열릴 때마다 보유 목록 최신화 (그 사이 던전 등에서 아이템이 바뀌었을 수 있음)
+            RefreshGold();
+        }
     }
 
     void OnDestroy()
@@ -73,8 +93,8 @@ public class UIShopController : MonoBehaviour
     {
         foreach (ItemData data in ItemManager._instance.GetAll())
         {
-            UIShopSlot slot = Instantiate(_slotPrefab, _buyGridParent);
-            slot.Init(this, ShopSlotContext.Buy);
+            UIShopSlot slot = Instantiate(_buySlotPrefab, _buyGridParent);
+            slot.Init(this);
 
             Sprite icon = Resources.Load<Sprite>(data.IconPath);
             slot.SetContent(data.ItemID, data.ItemName, data.Description, data.Price, icon);
@@ -86,7 +106,7 @@ public class UIShopController : MonoBehaviour
     /// <summary>보유 목록은 거래할 때마다 바뀌므로, 매번 지우고 다시 생성</summary>
     void RefreshSellSlots()
     {
-        foreach (UIShopSlot slot in _sellSlots)
+        foreach (UIShopOwnedSlot slot in _sellSlots)
             Destroy(slot.gameObject);
         _sellSlots.Clear();
         _selectedSellSlot = null;
@@ -102,8 +122,8 @@ public class UIShopController : MonoBehaviour
             if (data == null)
                 continue;
 
-            UIShopSlot slot = Instantiate(_slotPrefab, _sellGridParent);
-            slot.Init(this, ShopSlotContext.Sell);
+            UIShopOwnedSlot slot = Instantiate(_sellSlotPrefab, _sellGridParent);
+            slot.Init(this);
 
             Sprite icon = Resources.Load<Sprite>(data.IconPath);
             int sellPrice = data.Price / 2;   // 판매가 = 구매가의 50%, 서버 계산과 동일하게 표시만 함
@@ -114,25 +134,44 @@ public class UIShopController : MonoBehaviour
     }
 
     // ─────────────────────────────────────────────
-    // 슬롯(UIShopSlot)이 클릭 시 호출
+    // 슬롯이 클릭 시 호출 (타입별로 따로)
     // ─────────────────────────────────────────────
 
-    public void OnSlotClicked(UIShopSlot slot)
+    public void OnBuySlotClicked(UIShopSlot slot)
     {
-        if (slot.Context == ShopSlotContext.Buy)
-        {
-            if (_selectedBuySlot != null)
-                _selectedBuySlot.SetSelected(false);
-            _selectedBuySlot = slot;
-        }
-        else
-        {
-            if (_selectedSellSlot != null)
-                _selectedSellSlot.SetSelected(false);
-            _selectedSellSlot = slot;
-        }
-
+        if (_selectedBuySlot != null)
+            _selectedBuySlot.SetSelected(false);
+        _selectedBuySlot = slot;
         slot.SetSelected(true);
+
+        ShowDetail(slot.ItemName, slot.Description, slot.Price, slot.IconSprite);
+    }
+
+    public void OnSellSlotClicked(UIShopOwnedSlot slot)
+    {
+        if (_selectedSellSlot != null)
+            _selectedSellSlot.SetSelected(false);
+        _selectedSellSlot = slot;
+        slot.SetSelected(true);
+
+        ShowDetail(slot.ItemName, slot.Description, slot.Price, slot.IconSprite);
+    }
+
+    void ShowDetail(string itemName, string description, int price, Sprite icon)
+    {
+        if (_detailPanelRoot == null)
+            return;
+
+        _detailPanelRoot.SetActive(true);
+
+        if (_detailIcon != null)
+            _detailIcon.sprite = icon;
+        if (_detailNameText != null)
+            _detailNameText.text = itemName;
+        if (_detailDescriptionText != null)
+            _detailDescriptionText.text = description;
+        if (_detailPriceText != null)
+            _detailPriceText.text = price + " G";
     }
 
     // ─────────────────────────────────────────────
@@ -160,6 +199,7 @@ public class UIShopController : MonoBehaviour
     void OnBuyResult(bool success, int itemId, int newGold)
     {
         GameSession._instance.ApplyBuyResult(success, itemId, newGold);
+        RefreshGold();
 
         if (success)
             RefreshSellSlots();   // 구매 성공 시 보유 목록에 새로 추가되므로 갱신
@@ -168,8 +208,15 @@ public class UIShopController : MonoBehaviour
     void OnSellResult(bool success, int itemId, int newGold)
     {
         GameSession._instance.ApplySellResult(success, itemId, newGold);
+        RefreshGold();
 
         if (success)
             RefreshSellSlots();
+    }
+
+    void RefreshGold()
+    {
+        if (_goldText != null)
+            _goldText.text = GameSession._instance.Gold.ToString();
     }
 }

@@ -15,7 +15,7 @@ public class UITooltip : MonoBehaviour
     [SerializeField] TextMeshProUGUI _descriptionText;
     [SerializeField] TextMeshProUGUI _priceText;   // 상점이 아니면 빈 문자열로 넘기면 됨
 
-    Vector2  _positionOffset = new Vector2(0f, -30f);
+    Vector2  _positionOffset = new Vector2(0f, -100f);
     void Awake()
     {
         _instance = this;
