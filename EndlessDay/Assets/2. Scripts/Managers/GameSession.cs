@@ -107,12 +107,20 @@ public class GameSession : TSingleton<GameSession>
         CurrentLevel++;
         Debug.Log("[GameSession] 레벨업! 현재 레벨 : " + CurrentLevel);
 
-        TriggerPerkSelection();
+        _pendingPerkSelections++;
+        TryTriggerNextPerkSelection();
     }
 
-    /// <summary>레벨업 시점에 호출. 강화 UI가 등록돼있으면 후보를 넘겨서 띄움</summary>
-    void TriggerPerkSelection()
+    int _pendingPerkSelections;   // 한 프레임에 여러 레벨업이 겹쳐도, 강화 선택은 한 번에 하나씩만 처리
+
+    /// <summary>이미 선택 중이 아니고, 대기 중인 선택이 남아있으면 다음 강화 선택을 띄움</summary>
+    void TryTriggerNextPerkSelection()
     {
+        if (IsPerkSelectionOpen)
+            return;
+        if (_pendingPerkSelections <= 0)
+            return;
+
         List<PerkData> candidates = new List<PerkData>();
         foreach (PerkData perk in PerkManager._instance.GetAll())
         {
@@ -122,7 +130,7 @@ public class GameSession : TSingleton<GameSession>
 
         List<PerkData> picked = PickRandom(candidates, PERK_CHOICE_COUNT);
 
-        Debug.Log("[GameSession] 강화 선택지 " + picked.Count + "개:");
+        Debug.Log("[GameSession] 강화 선택지 " + picked.Count + "개 (대기 중인 선택 " + _pendingPerkSelections + "개):");
         foreach (PerkData perk in picked)
             Debug.Log(" - " + perk.PerkName);
 
@@ -135,10 +143,11 @@ public class GameSession : TSingleton<GameSession>
         else
         {
             Debug.LogWarning("[GameSession] 강화 선택 UI가 등록되어 있지 않음 (씬에 배치됐는지 확인)");
+            _pendingPerkSelections--;   // UI 자체가 없으면 이 선택은 그냥 건너뜀 (무한 대기 방지)
         }
     }
 
-    /// <summary>강화 선택 완료 시 호출(카드 클릭 시 UI가 호출). 스택 +1, 스탯 재계산, 게임 재개까지</summary>
+    /// <summary>강화 선택 완료 시 호출(카드 클릭 시 UI가 호출). 스택 +1, 스탯 재계산, 게임 재개, 남은 선택 있으면 이어서</summary>
     public void ApplyPerkChoice(int perkId)
     {
         if (!ActivePerks.ContainsKey(perkId))
@@ -153,6 +162,9 @@ public class GameSession : TSingleton<GameSession>
 
         IsPerkSelectionOpen = false;
         ReleasePause();
+
+        _pendingPerkSelections--;
+        TryTriggerNextPerkSelection();   // 겹쳐있던 레벨업이 더 있으면 곧바로 다음 선택 띄움
     }
 
     /// <summary>강화 카드가 떠있는 동안엔 true - 다른 UI(인벤토리/상점 등)가 이걸 보고 입력을 막을 수 있음</summary>

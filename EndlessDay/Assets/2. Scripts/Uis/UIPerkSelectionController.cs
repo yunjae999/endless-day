@@ -50,7 +50,9 @@ public class UIPerkSelectionController : MonoBehaviour
     {
         GameSession._instance.ApplyPerkChoice(perkId);
 
-        if (_panelRoot != null)
+        // ApplyPerkChoice 안에서 겹쳐있던 다음 선택을 곧바로 다시 띄웠을 수도 있으니,
+        // 그런 경우(IsPerkSelectionOpen이 여전히 true)엔 방금 새로 채운 패널을 닫으면 안 됨
+        if (!GameSession._instance.IsPerkSelectionOpen && _panelRoot != null)
             _panelRoot.SetActive(false);
     }
 }
