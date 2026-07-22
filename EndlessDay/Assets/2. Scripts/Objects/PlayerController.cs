@@ -42,7 +42,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     HashSet<Collider> _alreadyHit = new HashSet<Collider>();
 
     [Header("강화 특수효과 (검기 등)")]
-    //[SerializeField] SwordWaveProjectile _swordWavePrefab;
+    [SerializeField] SwordWaveProjectile _swordWavePrefab;
     Dictionary<int, int> _specialEffectAttackCounters = new Dictionary<int, int>();
 
     [Header("Skill (검: 회전 베기, 반경 3m / 쿨타임 6초)")]
@@ -348,13 +348,13 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     void FireSwordWave(SpecialEffect effect)
     {
-        //if (_swordWavePrefab == null)
+        if (_swordWavePrefab == null)
             return;
 
-        //SwordWaveProjectile wave = Instantiate(_swordWavePrefab, transform.position + transform.forward, transform.rotation);
+        SwordWaveProjectile wave = Instantiate(_swordWavePrefab, transform.position + transform.forward, transform.rotation);
 
-        //int damage = Mathf.RoundToInt(_statManager.FinalAttackPower * effect.DamagePercent / 100f);
-        //wave.Init(damage, effect.AreaRadius, _monsterLayer);
+        int damage = Mathf.RoundToInt(_statManager.FinalAttackPower * effect.DamagePercent / 100f);
+        wave.Init(damage, effect.AreaRadius, _monsterLayer);
     }
 
     public void OnAttackHitboxStart()

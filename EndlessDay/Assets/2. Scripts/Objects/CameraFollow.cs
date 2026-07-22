@@ -7,12 +7,19 @@ using UnityEngine;
 /// </summary>
 public class CameraFollow : MonoBehaviour
 {
+    public static CameraFollow _instance { get; private set; }
+
     [SerializeField] Vector3 _offset = new Vector3(0f, 10f, -8f);   // 탑뷰 고정 각도, 씬에 맞게 조정
 
     [Header("카메라 이동 범위 제한 (던전이 좁아서 밖이 보이는 걸 방지)")]
     [SerializeField] bool _useBounds;
     [SerializeField] Vector2 _minBounds;   // X, Z
     [SerializeField] Vector2 _maxBounds;
+
+    void Awake()
+    {
+        _instance = this;
+    }
 
     void LateUpdate()
     {
@@ -29,5 +36,13 @@ public class CameraFollow : MonoBehaviour
         }
 
         transform.position = desiredPosition;
+    }
+
+    /// <summary>DungeonController가 스테이지 클리어 시 호출 - 그 시점의 카메라 범위를 지정한 값으로 그대로 설정</summary>
+    public void SetBounds(Vector2 minBounds, Vector2 maxBounds)
+    {
+        _minBounds = minBounds;
+        _maxBounds = maxBounds;
+        _useBounds = true;
     }
 }
