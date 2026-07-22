@@ -1,12 +1,14 @@
 using Defines;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour, IDamageable
 {
     Animator _animator;
+    NavMeshAgent _agent;
     PlayerActionState _currentState;
     PlayerStatManager _statManager;
     Vector3 _moveDir;
@@ -39,6 +41,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] LayerMask _monsterLayer;      // 몬스터 레이어만 판정
     HashSet<Collider> _alreadyHit = new HashSet<Collider>();
 
+    [Header("강화 특수효과 (검기 등)")]
+    //[SerializeField] SwordWaveProjectile _swordWavePrefab;
+    Dictionary<int, int> _specialEffectAttackCounters = new Dictionary<int, int>();
+
     [Header("Skill (검: 회전 베기, 반경 3m / 쿨타임 6초)")]
     [SerializeField] float _skillRadius = 3f;
     [SerializeField] float _skillCooldown = 6f;
@@ -50,6 +56,8 @@ public class PlayerController : MonoBehaviour, IDamageable
     void Awake()
     {
         _animator = GetComponentInChildren<Animator>();
+        _agent = GetComponent<NavMeshAgent>();
+        _agent.updateRotation = false;   // 회전은 마우스 조준 등 우리 코드가 직접 제어 (몬스터 접근/공격 로직과 충돌 방지)
         _statManager = GetComponentInChildren<PlayerStatManager>();
         _currentState = PlayerActionState.IDLE;
         CurrentHP = _maxHP;
@@ -186,7 +194,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     void Move()
     {
         float speed = _isRun ? _statManager.FinalRunSpeed : _statManager.FinalMoveSpeed;
-        transform.position += _moveDir.normalized * speed * Time.deltaTime;
+        _agent.Move(_moveDir.normalized * speed * Time.deltaTime);
     }
     void Rotate()
     {
@@ -236,7 +244,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     void UpdateRoll()
     {
-        transform.position += _rollDirection * _rollSpeed * Time.deltaTime;
+        _agent.Move(_rollDirection * _rollSpeed * Time.deltaTime);
     }
 
     void UpdateRollCooldown()
@@ -282,11 +290,71 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     void EnterAttack()
     {
-        // 공격 시작 시점 방향으로 고정 (추후 마우스 조준 방향으로 교체 예정)
-        Vector3 attackDir = HasMoveInput() ? _moveDir.normalized : transform.forward;
+        Vector3 attackDir = GetMouseWorldDirection();
         transform.rotation = Quaternion.LookRotation(attackDir);
 
         ChangeActionState(PlayerActionState.ATTACK);
+
+        CheckAttackTriggeredPerks();
+    }
+
+    /// <summary>마우스 스크린 좌표를 캐릭터 높이의 가상 바닥 평면에 투영해서 방향 계산</summary>
+    Vector3 GetMouseWorldDirection()
+    {
+        if (Camera.main == null || Mouse.current == null)
+            return transform.forward;
+
+        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Plane groundPlane = new Plane(Vector3.up, transform.position);
+
+        if (!groundPlane.Raycast(ray, out float distance))
+            return transform.forward;
+
+        Vector3 hitPoint = ray.GetPoint(distance);
+        Vector3 direction = hitPoint - transform.position;
+        direction.y = 0f;
+
+        return direction.sqrMagnitude > 0.01f ? direction.normalized : transform.forward;
+    }
+
+    /// <summary>
+    /// 기본공격이 시작될 때마다 호출. "N타마다 발동" 타입(TriggerType==1)의 강화를 전부 확인해서
+    /// 각자 자기 주기(TriggerValue)가 찼으면 검기를 발사한다. 강화별로 카운터를 따로 관리.
+    /// </summary>
+    void CheckAttackTriggeredPerks()
+    {
+        foreach (KeyValuePair<int, int> pair in GameSession._instance.ActivePerks)
+        {
+            PerkData perk = PerkManager._instance.Get(pair.Key);
+            if (perk == null || perk.SpecialEffect == null)
+                continue;
+
+            if (perk.SpecialEffect.TriggerType != 1)   // 1 = 기본공격 N타마다
+                continue;
+
+            if (!_specialEffectAttackCounters.ContainsKey(perk.PerkID))
+                _specialEffectAttackCounters[perk.PerkID] = 0;
+
+            _specialEffectAttackCounters[perk.PerkID]++;
+
+            int triggerEvery = Mathf.Max(1, perk.SpecialEffect.TriggerValue);
+            if (_specialEffectAttackCounters[perk.PerkID] < triggerEvery)
+                continue;
+
+            _specialEffectAttackCounters[perk.PerkID] = 0;
+            FireSwordWave(perk.SpecialEffect);
+        }
+    }
+
+    void FireSwordWave(SpecialEffect effect)
+    {
+        //if (_swordWavePrefab == null)
+            return;
+
+        //SwordWaveProjectile wave = Instantiate(_swordWavePrefab, transform.position + transform.forward, transform.rotation);
+
+        //int damage = Mathf.RoundToInt(_statManager.FinalAttackPower * effect.DamagePercent / 100f);
+        //wave.Init(damage, effect.AreaRadius, _monsterLayer);
     }
 
     public void OnAttackHitboxStart()
@@ -348,6 +416,9 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     void EnterSkill()
     {
+        Vector3 skillDir = GetMouseWorldDirection();
+        transform.rotation = Quaternion.LookRotation(skillDir);
+
         _skillCooldownTimer = _skillCooldown;
         ChangeActionState(PlayerActionState.SKILL);
     }

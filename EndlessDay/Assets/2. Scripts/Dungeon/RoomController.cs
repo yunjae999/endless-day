@@ -9,6 +9,9 @@ public class RoomController : MonoBehaviour
 {
     [SerializeField] int _roomID;              // DungeonRoomTable/RoomSpawnTable의 RoomID와 일치해야 함
     [SerializeField] Transform[] _spawnPoints;  // 스폰 위치들, 스폰 개수가 더 많으면 순환 사용
+    [SerializeField] DungeonController _dungeonController;
+    [SerializeField] int _stageIndex;           // DungeonController.StageClear()에 넘길 인덱스 (0부터)
+    [SerializeField] bool _isFinalRoom;         // 던전의 마지막 방(최종 보스)이면 체크 - 클리어 시 마을로 복귀
 
     List<MonsterController> _aliveMonsters = new List<MonsterController>();
     bool _isCleared;
@@ -45,6 +48,19 @@ public class RoomController : MonoBehaviour
         _isCleared = true;
         Debug.Log("[RoomController] 방 클리어! RoomID : " + _roomID);
 
-        // TODO: 다음 방으로 가는 길 열기 (문 애니메이션, 잠긴 통로 해제 등)
+        if (_dungeonController != null)
+            _dungeonController.StageClear(_stageIndex);   // 다음 방으로 가는 길 열기 (벽/계단은 여기서 중앙 관리)
+
+        if (_isFinalRoom)
+            OnDungeonCleared();
+    }
+
+    void OnDungeonCleared()
+    {
+        Debug.Log("[RoomController] 던전 클리어! 마을로 복귀합니다.");
+
+        // TODO: 클리어 보상(DungeonTable.ClearReward) 지급, 몬스터 처치로 쌓인 골드 등 서버 반영,
+        //       PlayerData.IsCleared 갱신은 여기서 한 번에 처리하기로 했었음
+        UnityEngine.SceneManagement.SceneManager.LoadScene("VillageScene");
     }
 }

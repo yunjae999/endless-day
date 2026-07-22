@@ -140,3 +140,4 @@ InitTestScene*.unity*
 !Server/GameServer/*.sln
 !DB/GameDB/*.csproj
 !DB/GameDB/*.sln
+EndlessDay/Assets/4. Arts/Monsters/Zombie/Zombie.fbx
