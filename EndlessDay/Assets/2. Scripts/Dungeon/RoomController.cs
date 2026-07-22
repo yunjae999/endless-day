@@ -48,11 +48,11 @@ public class RoomController : MonoBehaviour
         _isCleared = true;
         Debug.Log("[RoomController] 방 클리어! RoomID : " + _roomID);
 
-        if (_dungeonController != null)
-            _dungeonController.StageClear(_stageIndex);   // 다음 방으로 가는 길 열기 (벽/계단은 여기서 중앙 관리)
-
         if (_isFinalRoom)
             OnDungeonCleared();
+        else if(_dungeonController != null)
+            _dungeonController.StageClear(_stageIndex);   // 다음 방으로 가는 길 열기 (벽/계단은 여기서 중앙 관리)
+
     }
 
     void OnDungeonCleared()
