@@ -43,6 +43,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     [Header("강화 특수효과 (검기 등)")]
     [SerializeField] SwordWaveProjectile _swordWavePrefab;
+    [SerializeField] Vector3 _swordWaveSpawnOffset = new Vector3(0f, 0f, 1f);   // 캐릭터 기준 로컬 오프셋 (오른쪽, 위쪽, 앞쪽)
     Dictionary<int, int> _specialEffectAttackCounters = new Dictionary<int, int>();
 
     [Header("Skill (검: 회전 베기, 반경 3m / 쿨타임 6초)")]
@@ -294,8 +295,6 @@ public class PlayerController : MonoBehaviour, IDamageable
         transform.rotation = Quaternion.LookRotation(attackDir);
 
         ChangeActionState(PlayerActionState.ATTACK);
-
-        CheckAttackTriggeredPerks();
     }
 
     /// <summary>마우스 스크린 좌표를 캐릭터 높이의 가상 바닥 평면에 투영해서 방향 계산</summary>
@@ -336,6 +335,7 @@ public class PlayerController : MonoBehaviour, IDamageable
                 _specialEffectAttackCounters[perk.PerkID] = 0;
 
             _specialEffectAttackCounters[perk.PerkID]++;
+            Debug.Log("[검기] " + perk.PerkName + " 카운트 : " + _specialEffectAttackCounters[perk.PerkID] + " / " + perk.SpecialEffect.TriggerValue);   // 임시
 
             int triggerEvery = Mathf.Max(1, perk.SpecialEffect.TriggerValue);
             if (_specialEffectAttackCounters[perk.PerkID] < triggerEvery)
@@ -351,7 +351,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (_swordWavePrefab == null)
             return;
 
-        SwordWaveProjectile wave = Instantiate(_swordWavePrefab, transform.position + transform.forward, transform.rotation);
+        Vector3 spawnPosition = transform.TransformPoint(_swordWaveSpawnOffset);   // 캐릭터 회전 반영한 위치
+        SwordWaveProjectile wave = Instantiate(_swordWavePrefab, spawnPosition, transform.rotation);
 
         int damage = Mathf.RoundToInt(_statManager.FinalAttackPower * effect.DamagePercent / 100f);
         wave.Init(damage, effect.AreaRadius, _monsterLayer);
@@ -362,6 +363,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         _alreadyHit.Clear();   // 이번 공격에서 맞은 대상 기록 초기화
         if (_attackHitbox != null)
             _attackHitbox.enabled = true;
+
+        CheckAttackTriggeredPerks();   // 무기가 실제로 휘둘러지는 순간에 맞춰 검기 판정
     }
 
     public void OnAttackHitboxEnd()

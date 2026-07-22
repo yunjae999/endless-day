@@ -157,7 +157,8 @@ MonoBehaviour:
   _monsterLayer:
     serializedVersion: 2
     m_Bits: 64
-  _swordWavePrefab: {fileID: 8738413083834861214, guid: 9068732985dcc6a49b90ed814711aed9, type: 3}
+  _swordWavePrefab: {fileID: 5459952880841054238, guid: 1b3e7b1c4a5a3624aabaeb83ec0b1967, type: 3}
+  _swordWaveSpawnOffset: {x: 0, y: 1.2, z: 0.5}
   _skillRadius: 3
   _skillCooldown: 6
 --- !u!114 &9093563398772551007
