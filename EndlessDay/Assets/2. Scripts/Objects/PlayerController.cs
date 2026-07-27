@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] int _maxHP = 100;   // 기획서 기본 스탯
 
     public int CurrentHP { get; private set; }
+    public int MaxHP => _statManager != null ? Mathf.RoundToInt(_statManager.FinalMaxHP) : _maxHP;
     public bool IsDead => CurrentHP <= 0;
 
     [Header("Roll")]
@@ -61,7 +62,6 @@ public class PlayerController : MonoBehaviour, IDamageable
         _agent.updateRotation = false;   // 회전은 마우스 조준 등 우리 코드가 직접 제어 (몬스터 접근/공격 로직과 충돌 방지)
         _statManager = GetComponentInChildren<PlayerStatManager>();
         _currentState = PlayerActionState.IDLE;
-        CurrentHP = _maxHP;
 
         if (_attackHitbox != null)
             _attackHitbox.enabled = false;
@@ -75,9 +75,16 @@ public class PlayerController : MonoBehaviour, IDamageable
             GameSession._instance.UnregisterPlayer(this);
     }
 
+    [Header("머리 위 체력바 (자식 오브젝트)")]
+    [SerializeField] UIWorldHealthBar _healthBar;
+
     void Start()
     {
         _statManager.InitBaseStats();
+        CurrentHP = Mathf.RoundToInt(_statManager.FinalMaxHP);   // 스탯(강화/장비 반영된 최종값) 기준으로 꽉 채워서 시작
+
+        if (_healthBar != null)
+            _healthBar.Init(GameSession._instance.Nickname, this);
     }
     void Update()
     {
@@ -174,6 +181,10 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (GameSession._instance.IsPerkSelectionOpen)
             return;
         if (GameSession._instance.IsShopOpen)
+            return;
+        if (GameSession._instance.IsResultShown)
+            return;
+        if (GameSession._instance.IsPauseMenuOpen)
             return;
         GameSession._instance.ToggleInventory();
     }
@@ -295,6 +306,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         transform.rotation = Quaternion.LookRotation(attackDir);
 
         ChangeActionState(PlayerActionState.ATTACK);
+
+        _healthBar?.ShowTemporarily();
     }
 
     /// <summary>마우스 스크린 좌표를 캐릭터 높이의 가상 바닥 평면에 투영해서 방향 계산</summary>
@@ -354,8 +367,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         Vector3 spawnPosition = transform.TransformPoint(_swordWaveSpawnOffset);   // 캐릭터 회전 반영한 위치
         SwordWaveProjectile wave = Instantiate(_swordWavePrefab, spawnPosition, transform.rotation);
 
-        int damage = Mathf.RoundToInt(_statManager.FinalAttackPower * effect.DamagePercent / 100f);
-        wave.Init(damage, effect.AreaRadius, _monsterLayer);
+        (int damage, bool isCrit) = CalculateDamage(effect.DamagePercent / 100f);
+        wave.Init(damage, effect.AreaRadius, _monsterLayer, isCrit);
     }
 
     public void OnAttackHitboxStart()
@@ -387,9 +400,22 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (other.TryGetComponent<IDamageable>(out IDamageable target))
         {
-            // 최종 공격력 그대로 적용 (기본공격 계수 100%)
-            target.TakeDamage(Mathf.RoundToInt(_statManager.FinalAttackPower));
+            (int damage, bool isCrit) = CalculateDamage(1f);   // 기본공격 계수 100%
+            target.TakeDamage(damage);
+            DamagePopupSpawner._instance?.Spawn(other.transform.position, damage, isCrit, false);
         }
+    }
+
+    /// <summary>치명타 판정 포함 데미지 계산. attackMultiplier: 공격력 대비 계수 (기본공격 1.0, 스킬 2.2 등)</summary>
+    (int damage, bool isCrit) CalculateDamage(float attackMultiplier)
+    {
+        bool isCrit = Random.Range(0f, 100f) < _statManager.FinalCritChance;
+        float damage = _statManager.FinalAttackPower * attackMultiplier;
+
+        if (isCrit)
+            damage *= _statManager.FinalCritDamage / 100f;   // CritDamage는 총 배율(%) - 150이면 150%
+
+        return (Mathf.RoundToInt(damage), isCrit);
     }
 
     public void OnAttackAnimationEnd()
@@ -424,6 +450,8 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         _skillCooldownTimer = _skillCooldown;
         ChangeActionState(PlayerActionState.SKILL);
+
+        _healthBar?.ShowTemporarily();
     }
 
     /// <summary>회전 베기 판정 프레임에 Animation Event로 연결 - 반경 안 몬스터 전체를 즉시 조회</summary>
@@ -435,7 +463,9 @@ public class PlayerController : MonoBehaviour, IDamageable
             if (hit.TryGetComponent<IDamageable>(out IDamageable target))
             {
                 // 검 스킬 계수 220%
-                target.TakeDamage(Mathf.RoundToInt(_statManager.FinalAttackPower * 2.2f));
+                (int damage, bool isCrit) = CalculateDamage(2.2f);
+                target.TakeDamage(damage);
+                DamagePopupSpawner._instance?.Spawn(hit.transform.position, damage, isCrit, false);
             }
         }
     }
@@ -466,6 +496,13 @@ public class PlayerController : MonoBehaviour, IDamageable
         CurrentHP = Mathf.Max(0, CurrentHP - amount);
 
         ChangeActionState(IsDead ? PlayerActionState.DEATH : PlayerActionState.HIT);
+
+        DamagePopupSpawner._instance?.Spawn(transform.position + Vector3.up, amount, false, true);
+
+        if (IsDead)
+            _healthBar?.Hide();
+        else
+            _healthBar?.ShowTemporarily();
     }
 
     /// <summary>피격 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
@@ -479,7 +516,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     /// <summary>사망 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
     public void OnDeathAnimationEnd()
     {
-        // TODO: 게임 오버 처리 / 마을 복귀 등 (기획서 "반복되는 하루" 흐름과 연결 예정)
-        Debug.Log("플레이어 사망 처리 필요 (TODO)");
+        if (UIResultController._instance != null)
+            UIResultController._instance.Show(false);
+        else
+            Debug.LogWarning("[PlayerController] 결과창 UI가 등록되어 있지 않음 (씬에 배치됐는지 확인)");
     }
 }

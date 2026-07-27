@@ -13,6 +13,25 @@ public class GameSession : TSingleton<GameSession>
     public bool IsInventoryOpen => _isInventoryOpen;
 
     public bool IsShopOpen { get; private set; }
+    public bool IsResultShown { get; private set; }
+    public bool IsPauseMenuOpen { get; private set; }
+
+    /// <summary>UIResultController가 결과창 여닫을 때 호출 - 다른 입력(인벤토리 등)을 막기 위함</summary>
+    public void SetResultShown(bool isShown)
+    {
+        IsResultShown = isShown;
+    }
+
+    /// <summary>UIPauseMenuController가 ESC 메뉴 여닫을 때 호출 - 게임 정지 + 다른 입력 차단</summary>
+    public void SetPauseMenuOpen(bool isOpen)
+    {
+        IsPauseMenuOpen = isOpen;
+
+        if (isOpen)
+            RequestPause();
+        else
+            ReleasePause();
+    }
 
     // ─────────────────────────────────────────────
     // 게임 정지 (여러 시스템이 동시에 정지를 요청할 수 있어 카운터로 관리)
@@ -65,17 +84,50 @@ public class GameSession : TSingleton<GameSession>
     public int CurrentDungeonFloor { get; private set; }
     public int CurrentRoomOrder { get; private set; }
 
+    // 결과창에 보여줄 "이번 시도만의" 통계 - 재도전마다 리셋
+    public int GoldEarnedThisRun { get; private set; }
+    public int MonstersKilledThisRun { get; private set; }
+    float _dungeonStartTime;
+
     /// <summary>던전 입구에서 호출 - "새로운 하루" 시작. 이번 시도용 값만 초기화, 골드/인벤토리는 유지</summary>
     public void StartNewDungeonRun()
     {
-        CurrentLevel = 1;
-        CurrentExp = 0;
-        ActivePerks.Clear();
+        ResetRunProgress();
 
         CurrentDungeonFloor = 1;
         CurrentRoomOrder = 1;
 
+        GoldEarnedThisRun = 0;
+        MonstersKilledThisRun = 0;
+        _dungeonStartTime = Time.time;
+
         PlayerStats?.Recalculate();   // 강화가 다 사라졌으니 스탯도 기본값으로 다시 계산
+    }
+
+    /// <summary>던전에서 나올 때(결과창 확인) 호출 - 레벨/강화를 즉시 초기화해서 마을에 도착했을 때 이미 반영되어 있게 함</summary>
+    public void EndDungeonRun()
+    {
+        ResetRunProgress();
+        PlayerStats?.Recalculate();
+    }
+
+    void ResetRunProgress()
+    {
+        CurrentLevel = 1;
+        CurrentExp = 0;
+        ActivePerks.Clear();
+    }
+
+    /// <summary>결과창에서 "걸린 시간" 표시용</summary>
+    public float GetElapsedDungeonTime()
+    {
+        return Time.time - _dungeonStartTime;
+    }
+
+    /// <summary>몬스터 죽을 때 호출 - 결과창용 처치 수 집계</summary>
+    public void AddMonsterKill()
+    {
+        MonstersKilledThisRun++;
     }
 
     public void AddExp(int amount)
@@ -323,6 +375,7 @@ public class GameSession : TSingleton<GameSession>
     public void AddGold(int amount)
     {
         Gold += amount;
+        GoldEarnedThisRun += amount;
     }
 
     /// <summary>골드가 충분하면 차감하고 true, 부족하면 아무것도 안 하고 false</summary>

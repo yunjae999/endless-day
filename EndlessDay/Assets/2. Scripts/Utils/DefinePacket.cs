@@ -231,6 +231,29 @@ namespace DefinePacket
         public int _result;
     }
 
+    /// <summary>클라 → 서버 : 결과창 확인 시 - 최종 골드와 이번 시도 클리어 여부 보고</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SaveDungeonResult_Request
+    {
+        public int _gold;
+        public int _isCleared;   // 1=클리어, 0=실패
+    }
+
+    /// <summary>서버 → DB : 골드 갱신 + TryCount 1증가 + IsCleared는 한 번 true되면 계속 유지</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_SaveDungeonResult_Request
+    {
+        public int _userId;
+        public int _gold;
+        public int _isCleared;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DB_SaveDungeonResult_Result
+    {
+        public int _result;
+    }
+
     /// <summary>서버 → DB : 구매 반영 (골드는 서버가 이미 검증/계산 완료, DB는 저장만)</summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct DB_BuyItem_Request

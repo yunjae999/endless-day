@@ -263,6 +263,32 @@ namespace GameDB
         }
 
         // ─────────────────────────────────────────────
+        // 결과창 확인 시 - 골드/도전횟수/클리어여부 저장
+        // ─────────────────────────────────────────────
+
+        /// <summary>골드는 클라가 보고한 최종값으로 덮어씀, TryCount는 항상 +1, IsCleared는 한 번 켜지면 계속 유지</summary>
+        public bool SaveDungeonResult(int userId, int gold, bool isCleared)
+        {
+            try
+            {
+                string query = string.Format(
+                    "UPDATE {0}.PlayerData SET Gold = @gold, TryCount = TryCount + 1, IsCleared = IsCleared OR @isCleared " +
+                    "WHERE UserID = @userId", _dbName);
+                MySqlCommand cmd = new MySqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("@gold", gold);
+                cmd.Parameters.AddWithValue("@isCleared", isCleared ? 1 : 0);
+                cmd.Parameters.AddWithValue("@userId", userId);
+                cmd.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[DB] SaveDungeonResult 실패 : {0}", ex.Message);
+                return false;
+            }
+        }
+
+        // ─────────────────────────────────────────────
         // 상점 - 구매/판매 (트랜잭션으로 골드/인벤토리 동시 반영)
         // ─────────────────────────────────────────────
 

@@ -620,6 +620,7 @@ GameObject:
   - component: {fileID: 149494894}
   - component: {fileID: 149494896}
   - component: {fileID: 149494895}
+  - component: {fileID: 149494897}
   m_Layer: 0
   m_Name: Text_Interact
   m_TagString: Untagged
@@ -746,6 +747,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 149494893}
   m_CullTransparentMesh: 1
+--- !u!114 &149494897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149494893}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffefeaa012729bf4a90290a009d94f1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &167505706
 GameObject:
   m_ObjectHideFlags: 0
@@ -2248,6 +2261,7 @@ GameObject:
   - component: {fileID: 752481600}
   - component: {fileID: 752481602}
   - component: {fileID: 752481601}
+  - component: {fileID: 752481603}
   m_Layer: 0
   m_Name: Text_DungeonEntrance (1)
   m_TagString: Untagged
@@ -2271,7 +2285,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.84, y: -1.34}
+  m_AnchoredPosition: {x: -0.37, y: -2.29}
   m_SizeDelta: {x: 4.93, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &752481601
@@ -2374,6 +2388,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 752481599}
   m_CullTransparentMesh: 1
+--- !u!114 &752481603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 752481599}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffefeaa012729bf4a90290a009d94f1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &780632111
 GameObject:
   m_ObjectHideFlags: 0
@@ -4330,6 +4356,7 @@ GameObject:
   - component: {fileID: 1440577232}
   - component: {fileID: 1440577234}
   - component: {fileID: 1440577233}
+  - component: {fileID: 1440577235}
   m_Layer: 0
   m_Name: Text_Name
   m_TagString: Untagged
@@ -4456,6 +4483,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1440577231}
   m_CullTransparentMesh: 1
+--- !u!114 &1440577235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1440577231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffefeaa012729bf4a90290a009d94f1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1466834038
 GameObject:
   m_ObjectHideFlags: 0
@@ -5094,6 +5133,7 @@ GameObject:
   - component: {fileID: 1582383333}
   - component: {fileID: 1582383335}
   - component: {fileID: 1582383334}
+  - component: {fileID: 1582383336}
   m_Layer: 0
   m_Name: Text_DungeonEntrance
   m_TagString: Untagged
@@ -5117,7 +5157,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.84, y: 1.22}
+  m_AnchoredPosition: {x: -0.37, y: 0.59}
   m_SizeDelta: {x: 4.93, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1582383334
@@ -5220,6 +5260,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1582383332}
   m_CullTransparentMesh: 1
+--- !u!114 &1582383336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1582383332}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffefeaa012729bf4a90290a009d94f1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1600503426
 PrefabInstance:
   m_ObjectHideFlags: 0

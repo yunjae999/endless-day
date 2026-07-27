@@ -410,6 +410,19 @@ public class NetworkManager : MonoBehaviour
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
     }
 
+    /// <summary>결과창 확인 버튼 누를 때 호출 - 최종 골드와 클리어 여부 저장 요청 (응답은 안 기다림)</summary>
+    public void SendSaveDungeonResult(int gold, bool isCleared)
+    {
+        SaveDungeonResult_Request req = new SaveDungeonResult_Request
+        {
+            _gold = gold,
+            _isCleared = isCleared ? 1 : 0
+        };
+        Packet packet = ConvertPacket.MakePacket((int)SendProtocol.SaveDungeonResult, req);
+        lock (_sendQueue)
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+    }
+
     // ─────────────────────────────────────────────
     // 종료 / 연결 끊김
     // ─────────────────────────────────────────────

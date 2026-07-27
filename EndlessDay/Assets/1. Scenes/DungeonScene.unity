@@ -1863,7 +1863,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _hudPrefab: {fileID: 4709192460068469466, guid: fc669b1359f693c4ca0352db21f2b44f, type: 3}
-  _inventoryPrefab: {fileID: 1621667277277630330, guid: 66496801b41c2264fb614b0465bbc2eb, type: 3}
+  _inventoryPrefab: {fileID: 499006546834057489, guid: 74fd65ca805de954db753d63787d4185, type: 3}
 --- !u!4 &160338049
 Transform:
   m_ObjectHideFlags: 0

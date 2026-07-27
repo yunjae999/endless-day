@@ -48,19 +48,26 @@ public class RoomController : MonoBehaviour
         _isCleared = true;
         Debug.Log("[RoomController] 방 클리어! RoomID : " + _roomID);
 
-        if (_isFinalRoom)
-            OnDungeonCleared();
-        else if(_dungeonController != null)
+        UIClearBanner._instance?.Show("Room " + (_stageIndex + 1) + " Clear");
+
+        // 마지막 방은 "다음 방으로 가는 길"이라는 개념 자체가 없어서(다음 방이 없으니) 호출하면 안 됨
+        if (!_isFinalRoom && _dungeonController != null)
             _dungeonController.StageClear(_stageIndex);   // 다음 방으로 가는 길 열기 (벽/계단은 여기서 중앙 관리)
 
+        if (_isFinalRoom)
+            OnDungeonCleared();
     }
 
     void OnDungeonCleared()
     {
-        Debug.Log("[RoomController] 던전 클리어! 마을로 복귀합니다.");
+        Debug.Log("[RoomController] 던전 클리어!");
 
-        // TODO: 클리어 보상(DungeonTable.ClearReward) 지급, 몬스터 처치로 쌓인 골드 등 서버 반영,
-        //       PlayerData.IsCleared 갱신은 여기서 한 번에 처리하기로 했었음
-        UnityEngine.SceneManagement.SceneManager.LoadScene("VillageScene");
+        // TODO: 클리어 보상(DungeonTable.ClearReward) 지급, PlayerData.IsCleared 서버 반영은
+        //       결과창에서 확인 누른 시점 등으로 추후 연결
+
+        if (UIResultController._instance != null)
+            UIResultController._instance.Show(true);
+        else
+            UnityEngine.SceneManagement.SceneManager.LoadScene("VillageScene");
     }
 }

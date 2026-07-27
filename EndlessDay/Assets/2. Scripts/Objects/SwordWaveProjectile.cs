@@ -13,15 +13,17 @@ public class SwordWaveProjectile : MonoBehaviour
     int _damage;
     float _hitRadius;
     LayerMask _monsterLayer;
+    bool _isCrit;
     Vector3 _startPosition;
     HashSet<Collider> _alreadyHit = new HashSet<Collider>();
 
     /// <summary>생성 직후 바로 호출해서 초기화 (PlayerController가 Instantiate 후 호출)</summary>
-    public void Init(int damage, float hitRadius, LayerMask monsterLayer)
+    public void Init(int damage, float hitRadius, LayerMask monsterLayer, bool isCrit)
     {
         _damage = damage;
         _hitRadius = hitRadius > 0f ? hitRadius : 0.5f;
         _monsterLayer = monsterLayer;
+        _isCrit = isCrit;
         _startPosition = transform.position;
     }
 
@@ -45,7 +47,10 @@ public class SwordWaveProjectile : MonoBehaviour
             _alreadyHit.Add(hit);
 
             if (hit.TryGetComponent<IDamageable>(out IDamageable target))
+            {
                 target.TakeDamage(_damage);
+                DamagePopupSpawner._instance?.Spawn(hit.transform.position, _damage, _isCrit, false);
+            }
         }
     }
 }

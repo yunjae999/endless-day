@@ -10,6 +10,7 @@
         BuyItem = 4,
         SellItem = 5,
         SaveInventory = 6,
+        SaveDungeonResult = 7,
     }
 
     public enum SendProtocol      // 서버 → 클라
@@ -41,6 +42,7 @@ namespace ClientServerProtocol
         BuyItem = 4,
         SellItem = 5,
         SaveInventory = 6,
+        SaveDungeonResult = 7,
     }
 
     public enum ReceiveProtocol   // 서버 → 클라

@@ -186,6 +186,10 @@ namespace GameServer
                         Handle_SaveInventoryResult(packet);
                         break;
 
+                    case ServerDBProtocol.ReceiveProtocol.SaveDungeonResultResult:
+                        Handle_SaveDungeonResultResult(packet);
+                        break;
+
                     default:
                         Console.WriteLine("[DBClient] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -261,6 +265,14 @@ namespace GameServer
                 (DB_SaveInventory_Result)ConvertPacket.UnpackData(packet, typeof(DB_SaveInventory_Result));
 
             Console.WriteLine("[DBClient] 인벤토리 저장 결과 : " + (result._result == 1 ? "성공" : "실패"));
+        }
+
+        void Handle_SaveDungeonResultResult(Packet packet)
+        {
+            DB_SaveDungeonResult_Result result =
+                (DB_SaveDungeonResult_Result)ConvertPacket.UnpackData(packet, typeof(DB_SaveDungeonResult_Result));
+
+            Console.WriteLine("[DBClient] 던전 결과 저장 결과 : " + (result._result == 1 ? "성공" : "실패"));
         }
 
         void Handle_BuyItemResult(Packet packet)
@@ -370,6 +382,18 @@ namespace GameServer
                 _equippedJson = equippedJson
             };
             Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.SaveInventory, req);
+            _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
+        }
+
+        public void RequestSaveDungeonResult(int userId, int gold, bool isCleared)
+        {
+            DB_SaveDungeonResult_Request req = new DB_SaveDungeonResult_Request
+            {
+                _userId = userId,
+                _gold = gold,
+                _isCleared = isCleared ? 1 : 0
+            };
+            Packet packet = ConvertPacket.MakePacket((int)ServerDBProtocol.SendProtocol.SaveDungeonResult, req);
             _sendQueue.Enqueue(ConvertPacket.ToBytes(packet));
         }
 

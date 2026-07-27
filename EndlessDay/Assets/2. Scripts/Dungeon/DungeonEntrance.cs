@@ -25,12 +25,14 @@ public class DungeonEntrance : MonoBehaviour
         if (!_isPlayerInRange)
             return;
 
-        // 다른 모달(강화선택/인벤토리/상점)이 열려있으면 무시
+        // 다른 모달(강화선택/인벤토리/상점/일시정지)이 열려있으면 무시
         if (GameSession._instance.IsPerkSelectionOpen)
             return;
         if (GameSession._instance.IsInventoryOpen)
             return;
         if (GameSession._instance.IsShopOpen)
+            return;
+        if (GameSession._instance.IsPauseMenuOpen)
             return;
 
         if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)

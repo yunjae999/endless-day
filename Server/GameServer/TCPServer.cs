@@ -233,6 +233,10 @@ namespace GameServer
                         Handle_SaveInventory(socketId, packet);
                         break;
 
+                    case ServerClientProtocol.ReceiveProtocol.SaveDungeonResult:
+                        Handle_SaveDungeonResult(socketId, packet);
+                        break;
+
                     default:
                         Console.WriteLine("[TCPServer] 알 수 없는 프로토콜 : {0}", packet._protocol);
                         break;
@@ -384,6 +388,19 @@ namespace GameServer
             Client client = _clientList[socketId];
 
             _dbClient.RequestSaveInventory(client.UserId, req._itemsJson, req._equippedJson);
+        }
+
+        void Handle_SaveDungeonResult(int socketId, Packet packet)
+        {
+            SaveDungeonResult_Request req =
+                (SaveDungeonResult_Request)ConvertPacket.UnpackData(packet, typeof(SaveDungeonResult_Request));
+
+            if (!_clientList.ContainsKey(socketId))
+                return;
+            Client client = _clientList[socketId];
+
+            client.Gold = req._gold;   // 서버 메모리 캐시도 같이 갱신 (이후 상점 등에서 참조하는 값이므로)
+            _dbClient.RequestSaveDungeonResult(client.UserId, req._gold, req._isCleared == 1);
         }
 
         // ─────────────────────────────────────────────

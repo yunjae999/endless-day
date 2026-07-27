@@ -10,6 +10,7 @@ public class MonsterController : MonoBehaviour, IDamageable
 
     [Header("스탯")]
     [SerializeField] int _maxHP = 30;
+    [SerializeField] int _monsterID;   // MonsterTable의 MonsterName을 가져오기 위한 ID
     [SerializeField] int _attackDamage = 10;
     [SerializeField] int _expReward = 5;
     [SerializeField] int _goldReward = 10;
@@ -39,13 +40,23 @@ public class MonsterController : MonoBehaviour, IDamageable
     bool _isPlayerInAttackRange;
 
     public int CurrentHP { get; private set; }
+    public int MaxHP => _maxHP;
     public bool IsDead => CurrentHP <= 0;
+
+    [SerializeField] UIWorldHealthBar _healthBar;
 
     void Awake()
     {
         _animator = GetComponentInChildren<Animator>();
         _agent = GetComponent<NavMeshAgent>();
         CurrentHP = _maxHP;
+
+        if (_healthBar != null)
+        {
+            DataTable monsterTable = TableDataManager._instance.Get(TableName.MonsterTable);
+            string monsterName = monsterTable.ToS(_monsterID, "MonsterName");
+            _healthBar.Init(monsterName, this);
+        }
     }
 
     void Start()
@@ -174,6 +185,8 @@ public class MonsterController : MonoBehaviour, IDamageable
         _agent.isStopped = false;
         _destinationTimer = 0f;
         ChangeActionState(MonsterActionState.CHASE);
+
+        _healthBar?.ShowTemporarily();
     }
 
     void UpdateChaseDestination()
@@ -197,12 +210,16 @@ public class MonsterController : MonoBehaviour, IDamageable
     {
         _agent.isStopped = true;   // 제자리에서 공격
         ChangeActionState(MonsterActionState.ATTACK);
+
+        _healthBar?.ShowTemporarily();
     }
 
     void EnterAttackIdle()
     {
         _agent.isStopped = true;
         ChangeActionState(MonsterActionState.ATTACK_IDLE);
+
+        _healthBar?.ShowTemporarily();
     }
 
     void UpdateAttackCooldown()
@@ -219,6 +236,7 @@ public class MonsterController : MonoBehaviour, IDamageable
         if (_isPlayerInAttackRange && _target != null && _target.TryGetComponent<IDamageable>(out IDamageable player))
         {
             player.TakeDamage(_attackDamage);
+            DamagePopupSpawner._instance?.Spawn(_target.position + Vector3.up, _attackDamage, false, true);
         }
     }
 
@@ -280,6 +298,11 @@ public class MonsterController : MonoBehaviour, IDamageable
         _agent.isStopped = true;
 
         ChangeActionState(IsDead ? MonsterActionState.DEATH : MonsterActionState.HIT);
+
+        if (IsDead)
+            _healthBar?.Hide();
+        else
+            _healthBar?.ShowTemporarily();
     }
 
     /// <summary>피격 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
@@ -296,6 +319,7 @@ public class MonsterController : MonoBehaviour, IDamageable
     {
         GameSession._instance.AddExp(_expReward);
         GameSession._instance.AddGold(_goldReward);
+        GameSession._instance.AddMonsterKill();
 
         Destroy(gameObject);
     }

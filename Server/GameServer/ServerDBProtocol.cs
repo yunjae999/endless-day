@@ -11,6 +11,7 @@
         BuyItem = 6,
         SellItem = 7,
         SaveInventory = 8,
+        SaveDungeonResult = 9,
     }
 
     public enum ReceiveProtocol    // DB → 서버
@@ -25,6 +26,7 @@
         BuyItemResult = 108,
         SellItemResult = 109,
         SaveInventoryResult = 110,
+        SaveDungeonResultResult = 111,
     }
 }
 
@@ -43,6 +45,7 @@ namespace DBServerProtocol
         BuyItemResult = 108,
         SellItemResult = 109,
         SaveInventoryResult = 110,
+        SaveDungeonResultResult = 111,
     }
 
     public enum ReceiveProtocol    // 서버 → DB
@@ -55,5 +58,6 @@ namespace DBServerProtocol
         BuyItem = 6,
         SellItem = 7,
         SaveInventory = 8,
+        SaveDungeonResult = 9,
     }
 }

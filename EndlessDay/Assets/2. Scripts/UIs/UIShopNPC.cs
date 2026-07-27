@@ -35,6 +35,9 @@ public class UIShopNPC : MonoBehaviour
         if (GameSession._instance.IsInventoryOpen)
             return;
 
+        if (GameSession._instance.IsPauseMenuOpen)
+            return;
+
         if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
             _shopController.ToggleShopPanel();
     }
