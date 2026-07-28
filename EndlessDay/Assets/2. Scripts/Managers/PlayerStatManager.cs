@@ -27,7 +27,7 @@ public class PlayerStatManager : MonoBehaviour
     [SerializeField] float _debugFinalAttackPower;
     [SerializeField] float _debugFinalDefense;
     [SerializeField] float _debugFinalMoveSpeed;
-    [SerializeField] float _debugFinalAttackSpeed;
+    [SerializeField] float _debugAttackSpeedPercentBonus;
 
     public int BaseMoveSpeed { get { return _baseMoveSpeed; } }
     public int BaseRunSpeed { get { return _baseRunSpeed; } }
@@ -41,7 +41,11 @@ public class PlayerStatManager : MonoBehaviour
     public float FinalDefense => _baseDefense * (1 + GetPercent(StatType.Defense) / 100f);
     public float FinalMoveSpeed => _baseMoveSpeed * (1 + GetPercent(StatType.MoveSpeed) / 100f);
     public float FinalRunSpeed => _baseRunSpeed * (1 + GetPercent(StatType.MoveSpeed) / 100f);
-    public float FinalAttackSpeed => _baseAttackSpeed * (1 + GetPercent(StatType.AttackSpeed) / 100f);
+    /// <summary>Animator.speed에 그대로 곱하면 됨. 클립 자체의 기본 재생속도(1배)를 기준으로, 공격속도%만큼 배속</summary>
+    public float AttackAnimatorSpeedMultiplier => 1f + GetPercent(StatType.AttackSpeed) / 100f;
+
+    /// <summary>HUD 표시용 - 공격속도 퍼센트 보너스 그대로</summary>
+    public float FinalAttackSpeedPercentBonus => GetPercent(StatType.AttackSpeed);
     public float FinalCritChance => _baseCritChance + GetPercentagePoint(StatType.CritChance);
     public float FinalCritDamage => _baseCritDamage + GetPercentagePoint(StatType.CritDamage);
 
@@ -114,7 +118,7 @@ public class PlayerStatManager : MonoBehaviour
         _debugFinalAttackPower = FinalAttackPower;
         _debugFinalDefense = FinalDefense;
         _debugFinalMoveSpeed = FinalMoveSpeed;
-        _debugFinalAttackSpeed = FinalAttackSpeed;
+        _debugAttackSpeedPercentBonus = FinalAttackSpeedPercentBonus;
     }
 
     void AddModifier(StatType statType, CalcType calcType, float value)

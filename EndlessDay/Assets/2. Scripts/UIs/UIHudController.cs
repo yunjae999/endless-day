@@ -63,7 +63,7 @@ public class UIHudController : MonoBehaviour
         _defenseText.text = Mathf.RoundToInt(stats.FinalDefense).ToString();
         _critChanceText.text = Mathf.RoundToInt(stats.FinalCritChance) + "%";
         _critDamageText.text = Mathf.RoundToInt(stats.FinalCritDamage) + "%";
-        _attackSpeedText.text = stats.FinalAttackSpeed.ToString("0.0");
+        _attackSpeedText.text = "+" + Mathf.RoundToInt(stats.FinalAttackSpeedPercentBonus) + "%";
         _moveSpeedText.text = Mathf.RoundToInt(stats.FinalMoveSpeed).ToString();
     }
 

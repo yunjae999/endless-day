@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -154,12 +155,29 @@ public class GameSession : TSingleton<GameSession>
         return GetRequiredExp(CurrentLevel);
     }
 
+    [SerializeField] float _levelUpEffectDelay = 1;   // 이펙트가 재생될 시간만큼, 강화 선택 UI(정지)를 늦춤
+
     void LevelUp()
     {
         CurrentLevel++;
         Debug.Log("[GameSession] 레벨업! 현재 레벨 : " + CurrentLevel);
 
         _pendingPerkSelections++;
+
+        if (Player != null && LevelUpEffectController._instance != null)
+        {
+            LevelUpEffectController._instance.Play(Player.transform.position);
+            StartCoroutine(DelayedTriggerPerkSelection());
+        }
+        else
+        {
+            TryTriggerNextPerkSelection();
+        }
+    }
+
+    IEnumerator DelayedTriggerPerkSelection()
+    {
+        yield return new WaitForSeconds(_levelUpEffectDelay);
         TryTriggerNextPerkSelection();
     }
 

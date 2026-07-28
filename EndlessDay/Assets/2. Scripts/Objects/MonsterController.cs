@@ -4,14 +4,14 @@ using Defines;
 
 public class MonsterController : MonoBehaviour, IDamageable
 {
-    Animator _animator;
+    protected Animator _animator;
     NavMeshAgent _agent;
     MonsterActionState _currentState;
 
     [Header("스탯")]
     [SerializeField] int _maxHP = 30;
     [SerializeField] int _monsterID;   // MonsterTable의 MonsterName을 가져오기 위한 ID
-    [SerializeField] int _attackDamage = 10;
+    [SerializeField] protected int _attackDamage = 10;
     [SerializeField] int _expReward = 5;
     [SerializeField] int _goldReward = 10;
 
@@ -26,7 +26,7 @@ public class MonsterController : MonoBehaviour, IDamageable
     float _stateTimer;
 
     [Header("Chase")]
-    [SerializeField] float _chaseSpeed = 3f;
+    [SerializeField] protected float _chaseSpeed = 3f;
     [SerializeField] float _destinationUpdateInterval = 0.2f;
     float _destinationTimer;
 
@@ -34,13 +34,16 @@ public class MonsterController : MonoBehaviour, IDamageable
     [SerializeField] float _attackCooldown = 1.5f;
     float _attackCooldownTimer;
 
-    Transform _target;
-    bool _isPlayerDetected;
+    protected Transform _target;
+    protected bool _isPlayerDetected;
     bool _isPlayerInChaseRange;
     bool _isPlayerInAttackRange;
 
     public int CurrentHP { get; private set; }
     public int MaxHP => _maxHP;
+
+    [SerializeField] protected Vector3 _damagePopupOffset = new Vector3(0, 0.7f, 1);
+    public Vector3 DamagePopupPosition => transform.position + _damagePopupOffset;
     public bool IsDead => CurrentHP <= 0;
 
     [SerializeField] UIWorldHealthBar _healthBar;
@@ -59,22 +62,33 @@ public class MonsterController : MonoBehaviour, IDamageable
         }
     }
 
-    void Start()
+    protected virtual void Start()
     {
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
             _target = player.transform;
 
+        EnterInitialState();
+    }
+
+    /// <summary>일반 몬스터는 Idle로 시작. 보스처럼 다르게 시작하고 싶으면 이걸 오버라이드</summary>
+    protected virtual void EnterInitialState()
+    {
         EnterIdle();
     }
 
-    void Update()
+    protected virtual void Update()
     {
         MonsterProcess();
     }
 
+    protected bool _isActive = true;   // 보스처럼 활성화 전엔 완전히 대기시키고 싶을 때 false로 시작
+
     void MonsterProcess()
     {
+        if (!_isActive)
+            return;
+
         _stateTimer -= Time.deltaTime;
         UpdateAttackCooldown();
 
@@ -88,11 +102,11 @@ public class MonsterController : MonoBehaviour, IDamageable
 
         if (shouldChase)
         {
-            if (_isPlayerInAttackRange)
+            if (IsPlayerInAttackRange())
             {
-                if (_attackCooldownTimer <= 0f)
+                if (IsAttackReady())
                 {
-                    EnterAttack();
+                    PerformAttack();
                     return;
                 }
 
@@ -206,7 +220,19 @@ public class MonsterController : MonoBehaviour, IDamageable
     // Attack
     // ─────────────────────────────────────────────
 
-    void EnterAttack()
+    /// <summary>공격을 실행할 준비가 됐는지. 일반 몬스터는 쿨타임 하나만 봄 - 보스는 공격별 쿨타임 여러 개를 봐야 하니 오버라이드</summary>
+    protected virtual bool IsAttackReady()
+    {
+        return _attackCooldownTimer <= 0f;
+    }
+
+    /// <summary>실제로 어떤 공격을 실행할지. 일반 몬스터는 하나뿐 - 보스는 여러 공격 중 골라서 실행하도록 오버라이드</summary>
+    protected virtual void PerformAttack()
+    {
+        EnterAttack();
+    }
+
+    protected void EnterAttack()
     {
         _agent.isStopped = true;   // 제자리에서 공격
         ChangeActionState(MonsterActionState.ATTACK);
@@ -236,17 +262,23 @@ public class MonsterController : MonoBehaviour, IDamageable
         if (_isPlayerInAttackRange && _target != null && _target.TryGetComponent<IDamageable>(out IDamageable player))
         {
             player.TakeDamage(_attackDamage);
-            DamagePopupSpawner._instance?.Spawn(_target.position + Vector3.up, _attackDamage, false, true);
+            DamagePopupSpawner._instance?.Spawn(player.DamagePopupPosition, _attackDamage, false, true);
         }
     }
 
     /// <summary>공격 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>
     public void OnAttackAnimationEnd()
     {
-        if (_isPlayerInAttackRange)
+        if (IsPlayerInAttackRange())
             EnterAttackIdle();
         else
             EnterChase();
+    }
+
+    /// <summary>지금 공격 사거리 안에 있는지. 일반 몬스터는 Attack 존(콜라이더) 하나로 판단 - 보스는 공격별 사거리를 직접 계산해야 하니 오버라이드</summary>
+    protected virtual bool IsPlayerInAttackRange()
+    {
+        return _isPlayerInAttackRange;
     }
 
     // ─────────────────────────────────────────────
@@ -295,9 +327,17 @@ public class MonsterController : MonoBehaviour, IDamageable
             return;
 
         CurrentHP = Mathf.Max(0, CurrentHP - amount);
-        _agent.isStopped = true;
 
-        ChangeActionState(IsDead ? MonsterActionState.DEATH : MonsterActionState.HIT);
+        if (IsDead)
+        {
+            _agent.isStopped = true;
+            ChangeActionState(MonsterActionState.DEATH);
+        }
+        else if (_currentState != MonsterActionState.ATTACK)   // 공격 중이면 애니메이션은 안 끊음 (데미지는 이미 적용됨)
+        {
+            _agent.isStopped = true;
+            ChangeActionState(MonsterActionState.HIT);
+        }
 
         if (IsDead)
             _healthBar?.Hide();

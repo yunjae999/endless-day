@@ -49,7 +49,7 @@ public class SwordWaveProjectile : MonoBehaviour
             if (hit.TryGetComponent<IDamageable>(out IDamageable target))
             {
                 target.TakeDamage(_damage);
-                DamagePopupSpawner._instance?.Spawn(hit.transform.position, _damage, _isCrit, false);
+                DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, _damage, _isCrit, false);
             }
         }
     }

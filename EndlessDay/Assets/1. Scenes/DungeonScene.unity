@@ -387,6 +387,7 @@ Transform:
   - {fileID: 875894527}
   - {fileID: 461466541}
   - {fileID: 48840882}
+  - {fileID: 1904183947}
   m_Father: {fileID: 1389128327}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!114 &27563054
@@ -1864,6 +1865,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _hudPrefab: {fileID: 4709192460068469466, guid: fc669b1359f693c4ca0352db21f2b44f, type: 3}
   _inventoryPrefab: {fileID: 499006546834057489, guid: 74fd65ca805de954db753d63787d4185, type: 3}
+  _sceneEffectsPrefab: {fileID: 728105001}
 --- !u!4 &160338049
 Transform:
   m_ObjectHideFlags: 0
@@ -1911,6 +1913,7 @@ Transform:
   - {fileID: 160338049}
   - {fileID: 1602803824}
   - {fileID: 1428156375}
+  - {fileID: 728105002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &162889186
@@ -6411,6 +6414,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3476499947573637210, guid: d2670d0ea7d6e7f4cb7e6be1a5541d46, type: 3}
   m_PrefabInstance: {fileID: 722153290}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &728105001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 728105002}
+  - component: {fileID: 728105003}
+  m_Layer: 0
+  m_Name: LevelUpEffectController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &728105002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 728105001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 161952201}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &728105003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 728105001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ace97bee4409fbe45a88718c4fb9a476, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _levelUpVFXPrefab: {fileID: 6391244716946464064, guid: 8336a615a96945044bdfc9d8947cbafb, type: 3}
+  _levelUpTextPrefab: {fileID: 6669393904156987353, guid: 38d7ad6b489be854fa94dec4164c29c1, type: 3}
+  _levelUpTextOffset: {x: 0, y: 2.2, z: 0}
 --- !u!1001 &728890496
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11539,8 +11589,8 @@ Camera:
   m_GameObject: {fileID: 1442301928}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -11590,7 +11640,7 @@ Transform:
   m_GameObject: {fileID: 1442301928}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5, y: 0, z: 0, w: 0.8660254}
-  m_LocalPosition: {x: 7.2, y: 16, z: -7.5}
+  m_LocalPosition: {x: -0.74, y: 8, z: 1.56}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -11610,8 +11660,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _offset: {x: 0, y: 8, z: -2.5}
   _useBounds: 1
-  _minBounds: {x: -10, y: -7.5}
-  _maxBounds: {x: 7.2, y: 1.5}
+  _minBounds: {x: -2, y: -7.5}
+  _maxBounds: {x: -0.7, y: 1.5}
 --- !u!114 &1442301933
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14492,6 +14542,72 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4220934241292132250, guid: a55e8b944b49e774899ecb13192840e5, type: 3}
   m_PrefabInstance: {fileID: 1898784799}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1904183946
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1904183947}
+  - component: {fileID: 1904183949}
+  - component: {fileID: 1904183948}
+  m_Layer: 0
+  m_Name: BossRoomTrigger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1904183947
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1904183946}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.5, y: 0, z: 1.76}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 27563053}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1904183948
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1904183946}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 4, z: 8.62}
+  m_Center: {x: 0, y: 2, z: 0}
+--- !u!114 &1904183949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1904183946}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 218370cd6f4aba441860079cdb359165, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1918808218
 PrefabInstance:
   m_ObjectHideFlags: 0

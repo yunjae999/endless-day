@@ -5365,6 +5365,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _hudPrefab: {fileID: 4709192460068469466, guid: fc669b1359f693c4ca0352db21f2b44f, type: 3}
   _inventoryPrefab: {fileID: 499006546834057489, guid: 74fd65ca805de954db753d63787d4185, type: 3}
+  _sceneEffectsPrefab: {fileID: 1970505363}
 --- !u!4 &1621590089
 Transform:
   m_ObjectHideFlags: 0
@@ -6554,6 +6555,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3769399657743381623, guid: 6dfce4c48bf1a9c4c89cdd78826c2762, type: 3}
   m_PrefabInstance: {fileID: 1955953432}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1970505363
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1970505364}
+  - component: {fileID: 1970505365}
+  m_Layer: 0
+  m_Name: LevelUpEffectController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1970505364
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1970505363}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2119391143}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1970505365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1970505363}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ace97bee4409fbe45a88718c4fb9a476, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _levelUpVFXPrefab: {fileID: 6391244716946464064, guid: 8336a615a96945044bdfc9d8947cbafb, type: 3}
+  _levelUpTextPrefab: {fileID: 6669393904156987353, guid: 38d7ad6b489be854fa94dec4164c29c1, type: 3}
+  _levelUpTextOffset: {x: 0, y: 2.2, z: 0}
 --- !u!1 &1984300260
 GameObject:
   m_ObjectHideFlags: 0
@@ -6876,6 +6924,7 @@ Transform:
   - {fileID: 444027551}
   - {fileID: 1621590089}
   - {fileID: 1984300262}
+  - {fileID: 1970505364}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807

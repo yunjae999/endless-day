@@ -21,6 +21,9 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     public int CurrentHP { get; private set; }
     public int MaxHP => _statManager != null ? Mathf.RoundToInt(_statManager.FinalMaxHP) : _maxHP;
+
+    [SerializeField] protected Vector3 _damagePopupOffset = new Vector3(0, 0.7f, 1);
+    public Vector3 DamagePopupPosition => transform.position + _damagePopupOffset;
     public bool IsDead => CurrentHP <= 0;
 
     [Header("Roll")]
@@ -41,6 +44,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] Collider _attackHitbox;       // 전방 고정 BoxCollider (Is Trigger), 평소엔 꺼둠
     [SerializeField] LayerMask _monsterLayer;      // 몬스터 레이어만 판정
     HashSet<Collider> _alreadyHit = new HashSet<Collider>();
+
+    [Header("기본공격/스킬 VFX")]
+    [SerializeField] GameObject _basicAttackVFXPrefab;
+    [SerializeField] Transform _attackVFXPoint;   // Player 프리팹 자식으로 직접 배치해서 위치/회전 눈으로 맞추기
+    [SerializeField] GameObject _skillVFXPrefab;
+    [SerializeField] Transform _skillVFXPoint;
 
     [Header("강화 특수효과 (검기 등)")]
     [SerializeField] SwordWaveProjectile _swordWavePrefab;
@@ -307,6 +316,9 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         ChangeActionState(PlayerActionState.ATTACK);
 
+        if (_animator != null)
+            _animator.speed = _statManager.AttackAnimatorSpeedMultiplier;   // 빨리 끝날수록 다음 공격도 그만큼 빨리 가능해짐
+
         _healthBar?.ShowTemporarily();
     }
 
@@ -377,7 +389,20 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (_attackHitbox != null)
             _attackHitbox.enabled = true;
 
+        SpawnVFX(_basicAttackVFXPrefab, _attackVFXPoint);
         CheckAttackTriggeredPerks();   // 무기가 실제로 휘둘러지는 순간에 맞춰 검기 판정
+    }
+
+    /// <summary>point가 있으면 그 위치/회전 그대로, 없으면 캐릭터 위치/회전으로 대체(안전장치)</summary>
+    void SpawnVFX(GameObject prefab, Transform point)
+    {
+        if (prefab == null)
+            return;
+
+        Vector3 position = point != null ? point.position : transform.position;
+        Quaternion rotation = point != null ? point.rotation : transform.rotation;
+
+        Instantiate(prefab, position, rotation);
     }
 
     public void OnAttackHitboxEnd()
@@ -402,7 +427,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             (int damage, bool isCrit) = CalculateDamage(1f);   // 기본공격 계수 100%
             target.TakeDamage(damage);
-            DamagePopupSpawner._instance?.Spawn(other.transform.position, damage, isCrit, false);
+            DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, damage, isCrit, false);
         }
     }
 
@@ -420,6 +445,9 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     public void OnAttackAnimationEnd()
     {
+        if (_animator != null)
+            _animator.speed = 1f;   // 공격 중에만 빨라져야 하니 반드시 원상복귀
+
         ChangeActionState(HasMoveInput() ? PlayerActionState.MOVE : PlayerActionState.IDLE);
     }
 
@@ -465,9 +493,11 @@ public class PlayerController : MonoBehaviour, IDamageable
                 // 검 스킬 계수 220%
                 (int damage, bool isCrit) = CalculateDamage(2.2f);
                 target.TakeDamage(damage);
-                DamagePopupSpawner._instance?.Spawn(hit.transform.position, damage, isCrit, false);
+                DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, damage, isCrit, false);
             }
         }
+
+        SpawnVFX(_skillVFXPrefab, _skillVFXPoint);
     }
 
     public void OnSkillAnimationEnd()
@@ -493,16 +523,37 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (IsInvincible)   // Roll 무적 구간이면 데미지 무시
             return;
 
-        CurrentHP = Mathf.Max(0, CurrentHP - amount);
+        int reducedAmount = ApplyDefense(amount);
+        CurrentHP = Mathf.Max(0, CurrentHP - reducedAmount);
 
-        ChangeActionState(IsDead ? PlayerActionState.DEATH : PlayerActionState.HIT);
+        bool canBeInterrupted = _currentState == PlayerActionState.IDLE || _currentState == PlayerActionState.MOVE;
 
-        DamagePopupSpawner._instance?.Spawn(transform.position + Vector3.up, amount, false, true);
+        if (IsDead)
+        {
+            if (_animator != null)
+                _animator.speed = 1f;   // 공격 중 사망으로 끊길 수 있으니 안전하게 복귀
+            ChangeActionState(PlayerActionState.DEATH);
+        }
+        else if (canBeInterrupted)
+        {
+            ChangeActionState(PlayerActionState.HIT);
+        }
+        // else: 공격/스킬 진행 중이면 데미지만 적용하고 애니메이션은 안 끊음
+
+        DamagePopupSpawner._instance?.Spawn(DamagePopupPosition, reducedAmount, false, true);
 
         if (IsDead)
             _healthBar?.Hide();
         else
             _healthBar?.ShowTemporarily();
+    }
+
+    /// <summary>방어력만큼 받는 데미지를 비율로 감소. 100 방어력 = 데미지 절반, 무한대로 갈수록 0에 수렴 (곱연산 스탯과 자연스럽게 어울리는 공식)</summary>
+    int ApplyDefense(int rawDamage)
+    {
+        float defense = _statManager.FinalDefense;
+        float reduced = rawDamage * (100f / (100f + defense));
+        return Mathf.Max(1, Mathf.RoundToInt(reduced));   // 최소 1은 들어가게 (방어력으로 완전 무적 방지)
     }
 
     /// <summary>피격 애니메이션이 끝나는 프레임에 Animation Event로 연결</summary>

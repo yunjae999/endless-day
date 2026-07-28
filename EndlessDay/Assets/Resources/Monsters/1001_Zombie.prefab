@@ -510,6 +510,7 @@ MonoBehaviour:
   _chaseSpeed: 3
   _destinationUpdateInterval: 0.2
   _attackCooldown: 1.5
+  _damagePopupOffset: {x: 0, y: 0.7, z: 1}
   _healthBar: {fileID: 7944825539214418736}
 --- !u!195 &3329723943864364533
 NavMeshAgent:

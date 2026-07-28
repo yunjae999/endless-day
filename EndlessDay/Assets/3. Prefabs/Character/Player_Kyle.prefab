@@ -533,6 +533,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffefeaa012729bf4a90290a009d94f1c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &6843936434358021711
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5179168794621597758}
+  m_Layer: 0
+  m_Name: AttackVFXPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5179168794621597758
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6843936434358021711}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.38268343, z: 0, w: 0.92387956}
+  m_LocalPosition: {x: 0, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2699263985418219429}
+  m_LocalEulerAnglesHint: {x: 0, y: 45, z: 0}
 --- !u!1 &7210274067139448933
 GameObject:
   m_ObjectHideFlags: 0
@@ -570,6 +601,8 @@ Transform:
   m_Children:
   - {fileID: 3060775055243189093}
   - {fileID: 7165707399453798409}
+  - {fileID: 5179168794621597758}
+  - {fileID: 8688700215294029382}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8754890350658450641
@@ -586,6 +619,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _rotateSpeed: 5
   _maxHP: 100
+  _damagePopupOffset: {x: 0, y: 0.7, z: 1}
   _rollDistance: 2
   _rollDuration: 0.35
   _rollCooldown: 1.2
@@ -593,6 +627,10 @@ MonoBehaviour:
   _monsterLayer:
     serializedVersion: 2
     m_Bits: 64
+  _basicAttackVFXPrefab: {fileID: 4657062279270735967, guid: 6cfbfde8dd68fb241822fc0bea6b43e0, type: 3}
+  _attackVFXPoint: {fileID: 5179168794621597758}
+  _skillVFXPrefab: {fileID: 7006541457124437921, guid: f8422cc0e2d15eb45b1753fc191b384d, type: 3}
+  _skillVFXPoint: {fileID: 8688700215294029382}
   _swordWavePrefab: {fileID: 5459952880841054238, guid: 1b3e7b1c4a5a3624aabaeb83ec0b1967, type: 3}
   _swordWaveSpawnOffset: {x: 0, y: 1.2, z: 0.5}
   _skillRadius: 3
@@ -614,7 +652,7 @@ MonoBehaviour:
   _debugFinalAttackPower: 0
   _debugFinalDefense: 0
   _debugFinalMoveSpeed: 0
-  _debugFinalAttackSpeed: 0
+  _debugAttackSpeedPercentBonus: 0
 --- !u!114 &4313850792460107942
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -737,6 +775,37 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!1 &9145153066389142583
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8688700215294029382}
+  m_Layer: 0
+  m_Name: SkillVFXPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8688700215294029382
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9145153066389142583}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2699263985418219429}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &3310347827138854030
 PrefabInstance:
   m_ObjectHideFlags: 0
