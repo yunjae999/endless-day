@@ -4906,3 +4906,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _speed: 12
   _maxDistance: 8
+  _obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 128

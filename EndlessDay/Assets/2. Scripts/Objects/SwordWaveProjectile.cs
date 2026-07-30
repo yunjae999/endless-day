@@ -9,6 +9,7 @@ public class SwordWaveProjectile : MonoBehaviour
 {
     [SerializeField] float _speed = 12f;
     [SerializeField] float _maxDistance = 8f;
+    [SerializeField] LayerMask _obstacleLayer;   // 벽 등 - 이 레이어에 닿으면 즉시 사라짐
 
     int _damage;
     float _hitRadius;
@@ -29,7 +30,16 @@ public class SwordWaveProjectile : MonoBehaviour
 
     void Update()
     {
-        transform.position += transform.forward * _speed * Time.deltaTime;
+        float step = _speed * Time.deltaTime;
+
+        // 이번 프레임에 이동할 거리만큼 미리 검사 - 얇은 벽도 뚫고 지나가지 않게
+        if (Physics.Raycast(transform.position, transform.forward, step, _obstacleLayer))
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        transform.position += transform.forward * step;
 
         CheckHit();
 
@@ -48,8 +58,9 @@ public class SwordWaveProjectile : MonoBehaviour
 
             if (hit.TryGetComponent<IDamageable>(out IDamageable target))
             {
-                target.TakeDamage(_damage);
-                DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, _damage, _isCrit, false);
+                int actualDamage = target.TakeDamage(_damage);
+                if (actualDamage > 0)
+                    DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, actualDamage, _isCrit, false);
             }
         }
     }

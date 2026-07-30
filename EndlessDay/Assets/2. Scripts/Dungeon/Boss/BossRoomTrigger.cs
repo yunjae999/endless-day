@@ -10,10 +10,14 @@ public class BossRoomTrigger : MonoBehaviour
 {
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log("[BossRoomTrigger] OnTriggerEnter : " + other.name + " (tag: " + other.tag + ")");   // 임시
+
         if (!other.CompareTag("Player"))
             return;
 
         GameObject bossObject = GameObject.FindWithTag("Boss");
+        Debug.Log("[BossRoomTrigger] FindWithTag(\"Boss\") 결과 : " + (bossObject != null ? bossObject.name : "못 찾음"));   // 임시
+
         if (bossObject != null && bossObject.TryGetComponent<BossController>(out BossController boss))
             boss.ActivateBoss();
 

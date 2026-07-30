@@ -499,8 +499,11 @@ MonoBehaviour:
   _maxHP: 30
   _monsterID: 1001
   _attackDamage: 10
+  _defense: 0
   _expReward: 50
   _goldReward: 10
+  _detectZoneCollider: {fileID: 1925098912699869508}
+  _chaseResetZoneCollider: {fileID: 629645933116502584}
   _idleMinTime: 2
   _idleMaxTime: 4
   _patrolMinTime: 2
@@ -512,6 +515,7 @@ MonoBehaviour:
   _attackCooldown: 1.5
   _damagePopupOffset: {x: 0, y: 0.7, z: 1}
   _healthBar: {fileID: 7944825539214418736}
+  _bodyCollider: {fileID: 7995555043335876488}
 --- !u!195 &3329723943864364533
 NavMeshAgent:
   m_ObjectHideFlags: 0

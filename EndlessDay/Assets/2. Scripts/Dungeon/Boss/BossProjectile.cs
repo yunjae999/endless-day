@@ -37,8 +37,8 @@ public class BossProjectile : MonoBehaviour
 
         if (other.TryGetComponent<IDamageable>(out IDamageable target))
         {
-            target.TakeDamage(_damage);
-            DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, _damage, false, true);
+            int actualDamage = target.TakeDamage(_damage);
+            DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, actualDamage, false, true);
         }
 
         _hasHit = true;

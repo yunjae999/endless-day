@@ -1,4 +1,5 @@
 using Defines;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>어떤 히트박스(공격)가 판정을 발생시켰는지 구분용 - 독액토하기는 투사체라 여기 없음(BossProjectile이 따로 처리)</summary>
@@ -17,8 +18,6 @@ public enum BossAttackType
 /// </summary>
 public class BossController : MonsterController
 {
-    [SerializeField] int _monsterID;   // MonsterTable 조회용 (예: 모르가스 = 3001)
-
     [Header("디버그 - 인스펙터 확인용 (플레이 중 값 실제로 채워지는지 확인)")]
     [SerializeField] int _debugBaseAttackDamage;
     [SerializeField] float _debugBaseChaseSpeed;
@@ -56,6 +55,9 @@ public class BossController : MonsterController
     protected override void EnterInitialState()
     {
         _isActive = false;   // 활성화되기 전까진 아무 것도 안 함 (배회 X, 감지 X)
+
+        if (_meleeHitbox != null) _meleeHitbox.enabled = false;
+        if (_jumpSlamHitbox != null) _jumpSlamHitbox.enabled = false;
 
         _baseAttackDamage = _attackDamage;
         _baseChaseSpeed = _chaseSpeed;
@@ -183,6 +185,11 @@ public class BossController : MonsterController
     {
         float distance = Vector3.Distance(transform.position, _target.position);
 
+        Debug.Log("[BossController] PerformAttack 판단 - meleeTimer:" + _meleeCooldownTimer.ToString("F2")
+            + " jumpSlamTimer:" + _jumpSlamCooldownTimer.ToString("F2")
+            + " poisonVomitTimer:" + _poisonVomitCooldownTimer.ToString("F2")
+            + " distance:" + distance.ToString("F2"));   // 임시
+
         if (_jumpSlamCooldownTimer <= 0f && distance <= _jumpSlamRange && _currentPhase >= _jumpSlamMinPhase)
         {
             EnterJumpSlam();
@@ -201,40 +208,68 @@ public class BossController : MonsterController
         // 셋 다 조건 안 맞으면(예: IsAttackReady 이후 미세하게 움직여서 사거리 벗어남) 아무 것도 안 함 - 다음 프레임에 다시 시도
     }
 
+    int _lastUsedSkillIndex = -1;   // 공격이 끝나는 시점에 이 값 기준으로 쿨타임을 리셋함
+
     void EnterMelee()
     {
-        _meleeCooldownTimer = _meleeCooldown;
+        Debug.Log("[BossController] Melee 발동 - Time.time: " + Time.time);   // 임시
+        _lastUsedSkillIndex = 0;
         _animator.SetInteger("SkillIndex", 0);
         EnterAttack();   // 부모의 ATTACK 상태/로직 그대로 재사용
     }
 
     void EnterJumpSlam()
     {
-        _jumpSlamCooldownTimer = _jumpSlamCooldown;
+        Debug.Log("[BossController] JumpSlam 발동 - Time.time: " + Time.time);   // 임시
+        _lastUsedSkillIndex = 1;
         _animator.SetInteger("SkillIndex", 1);
         EnterAttack();
     }
 
     void EnterPoisonVomit()
     {
-        _poisonVomitCooldownTimer = _poisonVomitCooldown;
+        Debug.Log("[BossController] PoisonVomit 발동 - Time.time: " + Time.time);   // 임시
+        _lastUsedSkillIndex = 2;
         _animator.SetInteger("SkillIndex", 2);
         EnterAttack();
+    }
+
+    /// <summary>공격이 실제로 끝나는 시점에 그 스킬의 쿨타임을 여기서 리셋 - "쓰기 시작할 때"가 아니라 "다 쓰고 나서"부터 쿨타임이 돌게 하기 위함</summary>
+    public override void OnAttackAnimationEnd()
+    {
+        switch (_lastUsedSkillIndex)
+        {
+            case 0: _meleeCooldownTimer = _meleeCooldown; break;
+            case 1: _jumpSlamCooldownTimer = _jumpSlamCooldown; break;
+            case 2: _poisonVomitCooldownTimer = _poisonVomitCooldown; break;
+        }
+
+        base.OnAttackAnimationEnd();   // 기존 EnterAttackIdle() 로직 그대로 이어서 실행
     }
 
     // ─────────────────────────────────────────────
     // Animation Event 콜백 (히트박스 on/off) - 공격 끝나는 시점은 부모의 OnAttackAnimationEnd() 그대로 재사용
     // ─────────────────────────────────────────────
 
-    public void OnMeleeHitboxStart() { if (_meleeHitbox != null) _meleeHitbox.enabled = true; }
+    public void OnMeleeHitboxStart()
+    {
+        _alreadyHitThisAttack.Clear();
+        if (_meleeHitbox != null) _meleeHitbox.enabled = true;
+    }
     public void OnMeleeHitboxEnd() { if (_meleeHitbox != null) _meleeHitbox.enabled = false; }
 
-    public void OnJumpSlamHitboxStart() { if (_jumpSlamHitbox != null) _jumpSlamHitbox.enabled = true; }
+    public void OnJumpSlamHitboxStart()
+    {
+        _alreadyHitThisAttack.Clear();
+        if (_jumpSlamHitbox != null) _jumpSlamHitbox.enabled = true;
+    }
     public void OnJumpSlamHitboxEnd() { if (_jumpSlamHitbox != null) _jumpSlamHitbox.enabled = false; }
 
     /// <summary>독액토하기 애니메이션의 발사 프레임에 Animation Event로 연결</summary>
     public void OnPoisonVomitFire()
     {
+        Debug.Log("[BossController] OnPoisonVomitFire 호출됨 - prefab null? " + (_poisonProjectilePrefab == null));   // 임시
+
         if (_poisonProjectilePrefab == null)
             return;
 
@@ -245,14 +280,26 @@ public class BossController : MonsterController
         projectile.Init(_attackDamage);
     }
 
-    /// <summary>BossAttackHitboxTrigger가 트리거 감지 시 호출 - 어떤 공격이든 지금 페이즈 공격력 그대로 적용</summary>
+    HashSet<Collider> _alreadyHitThisAttack = new HashSet<Collider>();
+
+    /// <summary>BossAttackHitboxTrigger가 트리거 감지 시 호출 - 어떤 공격이든 지금 페이즈 공격력 그대로 적용.
+    /// OnTriggerEnter/Stay 둘 다에서 불리므로, 이번 공격에서 이미 맞춘 대상은 걸러서 중복 데미지 방지</summary>
     public void OnAttackHitboxTriggerEnter(BossAttackType attackType, Collider other)
     {
-        if (other.TryGetComponent<IDamageable>(out IDamageable target))
-        {
-            target.TakeDamage(_attackDamage);
-            DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, _attackDamage, false, true);
-        }
+        if (_alreadyHitThisAttack.Contains(other))
+            return;
+
+        // TryGetComponent는 other 자기 자신에게만 있는 컴포넌트만 찾음 - 콜라이더가 자식에 있고
+        // IDamageable(PlayerController)은 루트에 있는 구조일 수 있어 GetComponentInParent로 안전하게 탐색
+        IDamageable target = other.GetComponentInParent<IDamageable>();
+        if (target == null)
+            return;
+
+        _alreadyHitThisAttack.Add(other);
+
+        int actualDamage = target.TakeDamage(_attackDamage);
+        if (actualDamage > 0)
+            DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, actualDamage, false, true);
     }
 
     /// <summary>플레이어가 보스방 트리거에 들어오는 순간 호출 - 그제서야 추적 시작</summary>

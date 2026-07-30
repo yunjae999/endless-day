@@ -64,7 +64,7 @@ public class PlayerStatManager : MonoBehaviour
         DataTable baseStatTable = TableDataManager._instance.Get(TableName.PlayerBaseStatTable);
 
         _baseMaxHP = baseStatTable.ToI(1, "MaxHP");
-        _baseAttackPower = baseStatTable.ToI(1, "AttackPower");
+        _baseAttackPower = baseStatTable.ToI(1, "AttackPower") + 30; // юс╫ц
         _baseDefense = baseStatTable.ToI(1, "Defense");
         _baseMoveSpeed = baseStatTable.ToI(1, "MoveSpeed");
         _baseRunSpeed = baseStatTable.ToI(1, "RunSpeed");

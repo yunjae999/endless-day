@@ -22,7 +22,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     public int CurrentHP { get; private set; }
     public int MaxHP => _statManager != null ? Mathf.RoundToInt(_statManager.FinalMaxHP) : _maxHP;
 
-    [SerializeField] protected Vector3 _damagePopupOffset = new Vector3(0, 0.7f, 1);
+    [SerializeField] Vector3 _damagePopupOffset = Vector3.up;
     public Vector3 DamagePopupPosition => transform.position + _damagePopupOffset;
     public bool IsDead => CurrentHP <= 0;
 
@@ -426,8 +426,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (other.TryGetComponent<IDamageable>(out IDamageable target))
         {
             (int damage, bool isCrit) = CalculateDamage(1f);   // 기본공격 계수 100%
-            target.TakeDamage(damage);
-            DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, damage, isCrit, false);
+            int actualDamage = target.TakeDamage(damage);
+            if (actualDamage > 0)
+                DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, actualDamage, isCrit, false);
         }
     }
 
@@ -492,8 +493,9 @@ public class PlayerController : MonoBehaviour, IDamageable
             {
                 // 검 스킬 계수 220%
                 (int damage, bool isCrit) = CalculateDamage(2.2f);
-                target.TakeDamage(damage);
-                DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, damage, isCrit, false);
+                int actualDamage = target.TakeDamage(damage);
+                if (actualDamage > 0)
+                    DamagePopupSpawner._instance?.Spawn(target.DamagePopupPosition, actualDamage, isCrit, false);
             }
         }
 
@@ -515,13 +517,13 @@ public class PlayerController : MonoBehaviour, IDamageable
     // IDamageable
     // ─────────────────────────────────────────────
 
-    public void TakeDamage(int amount)
+    public int TakeDamage(int amount)
     {
         if (IsDead)
-            return;
+            return 0;
 
         if (IsInvincible)   // Roll 무적 구간이면 데미지 무시
-            return;
+            return 0;
 
         int reducedAmount = ApplyDefense(amount);
         CurrentHP = Mathf.Max(0, CurrentHP - reducedAmount);
@@ -546,6 +548,8 @@ public class PlayerController : MonoBehaviour, IDamageable
             _healthBar?.Hide();
         else
             _healthBar?.ShowTemporarily();
+
+        return reducedAmount;
     }
 
     /// <summary>방어력만큼 받는 데미지를 비율로 감소. 100 방어력 = 데미지 절반, 무한대로 갈수록 0에 수렴 (곱연산 스탯과 자연스럽게 어울리는 공식)</summary>

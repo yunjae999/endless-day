@@ -7,7 +7,8 @@ using UnityEngine;
 /// </summary>
 public interface IDamageable
 {
-    void TakeDamage(int amount);
+    /// <summary>방어력 적용 후 실제로 깎인 데미지를 반환 (팝업에 정확한 숫자를 보여주기 위함)</summary>
+    int TakeDamage(int amount);
     bool IsDead { get; }
     int CurrentHP { get; }
     int MaxHP { get; }

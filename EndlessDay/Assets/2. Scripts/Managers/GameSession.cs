@@ -68,7 +68,7 @@ public class GameSession : TSingleton<GameSession>
     // 레벨 / 경험치 (던전 재도전마다 리셋되는 값 - 로그라이트 특성)
     // ─────────────────────────────────────────────
 
-    const int EXP_PER_LEVEL_MULTIPLIER = 50;   // 임시 공식: 필요경험치 = 현재레벨 × 50
+    const int EXP_PER_LEVEL_MULTIPLIER = 5;   // 임시 공식: 필요경험치 = 현재레벨 × 5
     const int PERK_CHOICE_COUNT = 3;
     const int CURRENT_WEAPON_TYPE = 1;   // TODO: 무기 선택 시스템 완성되면 실제 장착 무기 값으로 교체 (지금은 검 고정)
 
@@ -155,7 +155,7 @@ public class GameSession : TSingleton<GameSession>
         return GetRequiredExp(CurrentLevel);
     }
 
-    [SerializeField] float _levelUpEffectDelay = 1;   // 이펙트가 재생될 시간만큼, 강화 선택 UI(정지)를 늦춤
+    [SerializeField] float _levelUpEffectDelay = 1.2f;   // 이펙트가 재생될 시간만큼, 강화 선택 UI(정지)를 늦춤
 
     void LevelUp()
     {
