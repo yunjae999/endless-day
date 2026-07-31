@@ -26,6 +26,16 @@ public class PlayerController : MonoBehaviour, IDamageable
     public Vector3 DamagePopupPosition => transform.position + _damagePopupOffset;
     public bool IsDead => CurrentHP <= 0;
 
+    /// <summary>레벨업/강화 등으로 체력을 회복시킬 때 호출. 최대체력을 넘지 않게 보정</summary>
+    public void Heal(int amount)
+    {
+        if (IsDead)
+            return;
+
+        CurrentHP = Mathf.Min(MaxHP, CurrentHP + amount);
+        _healthBar?.ShowTemporarily();
+    }
+
     [Header("Roll")]
     [SerializeField] float _rollDistance = 7.5f;
     [SerializeField] float _rollDuration = 1.1f;   // 속도 계산용 (_rollDistance / _rollDuration)
@@ -360,7 +370,6 @@ public class PlayerController : MonoBehaviour, IDamageable
                 _specialEffectAttackCounters[perk.PerkID] = 0;
 
             _specialEffectAttackCounters[perk.PerkID]++;
-            Debug.Log("[검기] " + perk.PerkName + " 카운트 : " + _specialEffectAttackCounters[perk.PerkID] + " / " + perk.SpecialEffect.TriggerValue);   // 임시
 
             int triggerEvery = Mathf.Max(1, perk.SpecialEffect.TriggerValue);
             if (_specialEffectAttackCounters[perk.PerkID] < triggerEvery)

@@ -129,19 +129,22 @@ public class MonsterController : MonoBehaviour, IDamageable
 
         if (shouldChase)
         {
-            if (IsPlayerInAttackRange())
-            {
-                if (IsAttackReady())
-                {
-                    PerformAttack();
-                    return;
-                }
+            bool inRange = IsPlayerInAttackRange();
 
+            if (inRange && IsAttackReady())
+            {
+                PerformAttack();
+                return;
+            }
+
+            if (inRange && ShouldStopWhenInRange())
+            {
                 if (_currentState != MonsterActionState.ATTACK_IDLE)
                     EnterAttackIdle();
                 return;   // 대기 중이므로 이동 갱신 없음
             }
 
+            // 사거리 밖이거나, 사거리 안이어도 계속 움직이는 몬스터(보스 등)면 여기로 - 계속 접근
             if (_currentState != MonsterActionState.CHASE)
                 EnterChase();
 
@@ -220,7 +223,7 @@ public class MonsterController : MonoBehaviour, IDamageable
     // Chase
     // ─────────────────────────────────────────────
 
-    void EnterChase()
+    protected void EnterChase()
     {
         _agent.speed = _chaseSpeed;
         _agent.isStopped = false;
@@ -305,6 +308,12 @@ public class MonsterController : MonoBehaviour, IDamageable
     protected virtual bool IsPlayerInAttackRange()
     {
         return _isPlayerInAttackRange;
+    }
+
+    /// <summary>사거리 안인데 공격 준비가 안 됐을 때 멈춰서 기다릴지. 일반 몬스터는 멈춤 - 보스처럼 계속 접근하며 기회를 노리게 하고 싶으면 오버라이드해서 false</summary>
+    protected virtual bool ShouldStopWhenInRange()
+    {
+        return true;
     }
 
     // ─────────────────────────────────────────────
@@ -394,7 +403,7 @@ public class MonsterController : MonoBehaviour, IDamageable
     }
 
 
-    public void OnDeathAnimationEnd()
+    public virtual void OnDeathAnimationEnd()
     {
         GameSession._instance.AddExp(_expReward);
         GameSession._instance.AddGold(_goldReward);

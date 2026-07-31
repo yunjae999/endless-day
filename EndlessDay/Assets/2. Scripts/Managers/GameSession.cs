@@ -68,7 +68,7 @@ public class GameSession : TSingleton<GameSession>
     // 레벨 / 경험치 (던전 재도전마다 리셋되는 값 - 로그라이트 특성)
     // ─────────────────────────────────────────────
 
-    const int EXP_PER_LEVEL_MULTIPLIER = 5;   // 임시 공식: 필요경험치 = 현재레벨 × 5
+    const int EXP_PER_LEVEL_MULTIPLIER = 8;   // 임시 공식: 필요경험치 = 현재레벨 × 8
     const int PERK_CHOICE_COUNT = 3;
     const int CURRENT_WEAPON_TYPE = 1;   // TODO: 무기 선택 시스템 완성되면 실제 장착 무기 값으로 교체 (지금은 검 고정)
 
@@ -157,10 +157,18 @@ public class GameSession : TSingleton<GameSession>
 
     [SerializeField] float _levelUpEffectDelay = 1.2f;   // 이펙트가 재생될 시간만큼, 강화 선택 UI(정지)를 늦춤
 
+    const float LEVEL_UP_HEAL_PERCENT = 0.3f;   // 레벨업 시 최대체력의 이 비율만큼 회복
+
     void LevelUp()
     {
         CurrentLevel++;
         Debug.Log("[GameSession] 레벨업! 현재 레벨 : " + CurrentLevel);
+
+        if (Player != null)
+        {
+            int healAmount = Mathf.RoundToInt(Player.MaxHP * LEVEL_UP_HEAL_PERCENT);
+            Player.Heal(healAmount);
+        }
 
         _pendingPerkSelections++;
 
@@ -228,7 +236,16 @@ public class GameSession : TSingleton<GameSession>
         Debug.Log("[GameSession] 강화 적용 : " + (perk != null ? perk.PerkName : perkId.ToString())
             + " (현재 " + ActivePerks[perkId] + "스택)");
 
+        int maxHPBeforeRecalculate = Player != null ? Player.MaxHP : 0;
+
         PlayerStats?.Recalculate();
+
+        if (Player != null)
+        {
+            int maxHPIncrease = Player.MaxHP - maxHPBeforeRecalculate;
+            if (maxHPIncrease > 0)
+                Player.Heal(maxHPIncrease);   // 체력증가 강화 등, 최대체력이 늘어난 만큼 그대로 회복
+        }
 
         IsPerkSelectionOpen = false;
         ReleasePause();
