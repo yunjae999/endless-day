@@ -707,6 +707,7 @@ MonoBehaviour:
   _rotateSpeed: 5
   _maxHP: 100
   _damagePopupOffset: {x: 0, y: 0.7, z: 1}
+  _shadowObject: {fileID: 6437364660222131327}
   _rollDistance: 2
   _rollDuration: 0.35
   _rollCooldown: 1.2

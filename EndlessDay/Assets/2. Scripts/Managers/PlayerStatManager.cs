@@ -64,7 +64,7 @@ public class PlayerStatManager : MonoBehaviour
         DataTable baseStatTable = TableDataManager._instance.Get(TableName.PlayerBaseStatTable);
 
         _baseMaxHP = baseStatTable.ToI(1, "MaxHP");
-        _baseAttackPower = baseStatTable.ToI(1, "AttackPower") + 30; // 임시
+        _baseAttackPower = baseStatTable.ToI(1, "AttackPower");
         _baseDefense = baseStatTable.ToI(1, "Defense");
         _baseMoveSpeed = baseStatTable.ToI(1, "MoveSpeed");
         _baseRunSpeed = baseStatTable.ToI(1, "RunSpeed");
@@ -82,9 +82,13 @@ public class PlayerStatManager : MonoBehaviour
             GameSession._instance.UnregisterPlayerStats(this);
     }
 
-    /// <summary>강화를 새로 얻거나 장비를 갈아입을 때마다 호출 - GameSession의 최신 상태를 전부 다시 합산</summary>
+    /// <summary>강화를 새로 얻거나 장비를 갈아입을 때마다 호출 - GameSession의 최신 상태를 전부 다시 합산.
+    /// 이 호출로 최대체력이 늘어났다면, 늘어난 만큼 현재체력도 그대로 회복시킴</summary>
     public void Recalculate()
     {
+        PlayerController player = GameSession._instance.Player;
+        int maxHPBefore = player != null ? player.MaxHP : 0;
+
         _percentModifiers.Clear();
         _percentagePointModifiers.Clear();
 
@@ -119,6 +123,13 @@ public class PlayerStatManager : MonoBehaviour
         _debugFinalDefense = FinalDefense;
         _debugFinalMoveSpeed = FinalMoveSpeed;
         _debugAttackSpeedPercentBonus = FinalAttackSpeedPercentBonus;
+
+        if (player != null)
+        {
+            int maxHPIncrease = player.MaxHP - maxHPBefore;
+            if (maxHPIncrease > 0)
+                player.Heal(maxHPIncrease);   // 장비 착용/강화 등 원인 상관없이, 늘어난 만큼 그대로 회복
+        }
     }
 
     void AddModifier(StatType statType, CalcType calcType, float value)

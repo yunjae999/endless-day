@@ -9,12 +9,16 @@ public class PlayerSpawner : MonoBehaviour
 {
     [SerializeField] GameObject _playerPrefab;
     [SerializeField] Transform _spawnPoint;   // 씬 안의 빈 오브젝트, 위치/방향 표시용 마커
+    [SerializeField] bool _showShadow = true;   // 이 씬(마을/던전)에서 그림자를 보여줄지 - 씬마다 배치된 스포너에서 각자 설정
 
     void Awake()
     {
         Vector3 position = _spawnPoint != null ? _spawnPoint.position : Vector3.zero;
         Quaternion rotation = _spawnPoint != null ? _spawnPoint.rotation : Quaternion.identity;
 
-        Instantiate(_playerPrefab, position, rotation);
+        GameObject playerObject = Instantiate(_playerPrefab, position, rotation);
+
+        if (playerObject.TryGetComponent<PlayerController>(out PlayerController player))
+            player.SetShadowVisible(_showShadow);
     }
 }

@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     bool _isRun;
 
     [Header("HP")]
-    [SerializeField] int _maxHP = 100;   // 기획서 기본 스탯
+    [SerializeField] int _maxHP = 100;
 
     public int CurrentHP { get; private set; }
     public int MaxHP => _statManager != null ? Mathf.RoundToInt(_statManager.FinalMaxHP) : _maxHP;
@@ -25,6 +25,15 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] Vector3 _damagePopupOffset = Vector3.up;
     public Vector3 DamagePopupPosition => transform.position + _damagePopupOffset;
     public bool IsDead => CurrentHP <= 0;
+
+    [SerializeField] GameObject _shadowObject;
+
+    /// <summary>생성 직후 스포너가 호출 - 씬에 따라 그림자 표시 여부를 결정</summary>
+    public void SetShadowVisible(bool visible)
+    {
+        if (_shadowObject != null)
+            _shadowObject.SetActive(visible);
+    }
 
     /// <summary>레벨업/강화 등으로 체력을 회복시킬 때 호출. 최대체력을 넘지 않게 보정</summary>
     public void Heal(int amount)
@@ -183,14 +192,26 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (!value.isPressed)
             return;
+        if (IsPointerOverUI())
+            return;
         TryStartAttack();
     }
     public void OnSkill(InputValue value)
     {
         if (!value.isPressed)
             return;
+        if (IsPointerOverUI())
+            return;
         TryStartSkill();
     }
+
+    /// <summary>마우스가 UI(강화 카드, 버튼 등) 위에 있는지 - 클릭이 UI로 소비됐으면 공격/스킬로 안 새어나가게</summary>
+    bool IsPointerOverUI()
+    {
+        return UnityEngine.EventSystems.EventSystem.current != null
+            && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+    }
+
     public void OnInventory(InputValue value)
     {
         if (!value.isPressed)

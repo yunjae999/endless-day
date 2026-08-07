@@ -236,16 +236,7 @@ public class GameSession : TSingleton<GameSession>
         Debug.Log("[GameSession] 강화 적용 : " + (perk != null ? perk.PerkName : perkId.ToString())
             + " (현재 " + ActivePerks[perkId] + "스택)");
 
-        int maxHPBeforeRecalculate = Player != null ? Player.MaxHP : 0;
-
-        PlayerStats?.Recalculate();
-
-        if (Player != null)
-        {
-            int maxHPIncrease = Player.MaxHP - maxHPBeforeRecalculate;
-            if (maxHPIncrease > 0)
-                Player.Heal(maxHPIncrease);   // 체력증가 강화 등, 최대체력이 늘어난 만큼 그대로 회복
-        }
+        PlayerStats?.Recalculate();   // 최대체력이 늘어났으면 Recalculate() 안에서 알아서 회복까지 처리됨
 
         IsPerkSelectionOpen = false;
         ReleasePause();
